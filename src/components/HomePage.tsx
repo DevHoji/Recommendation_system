@@ -95,12 +95,12 @@ export default function HomePage({
           {/* Background Image */}
           <div className="absolute inset-0">
             <img
-              src={featuredMovie.posterUrl || '/placeholder-hero.jpg'}
+              src={featuredMovie.posterUrl || '/placeholder-hero.svg'}
               alt={featuredMovie.title}
               className="w-full h-full object-cover"
               onError={(e) => {
                 const target = e.target as HTMLImageElement;
-                target.src = '/placeholder-hero.jpg';
+                target.src = '/placeholder-hero.svg';
               }}
             />
             <div className="absolute inset-0 bg-gradient-to-r from-black via-black/70 to-transparent" />
@@ -188,7 +188,7 @@ export default function HomePage({
 
       {/* Movie Sections */}
       <div className="relative z-10 -mt-32 pb-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
+        <div className="space-y-12">
           {sections.map((section, sectionIndex) => (
             <MovieSection
               key={section.title}

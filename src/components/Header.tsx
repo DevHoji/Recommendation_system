@@ -1,6 +1,8 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { Search, Mic, MicOff, User, Heart, Menu, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import VoiceSearch from './VoiceSearch';
@@ -22,6 +24,7 @@ const Header: React.FC<HeaderProps> = ({
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isVoiceSearchOpen, setIsVoiceSearchOpen] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const pathname = usePathname();
 
   useEffect(() => {
     if (isSearchOpen && searchInputRef.current) {
@@ -55,26 +58,46 @@ const Header: React.FC<HeaderProps> = ({
                 animate={{ opacity: 1, x: 0 }}
                 className="text-2xl font-bold text-red-600"
               >
-                <a href="/" className="hover:text-red-400 transition-colors">
+                <Link href="/" className="hover:text-red-400 transition-colors">
                   CineAI
-                </a>
+                </Link>
               </motion.div>
             </div>
 
             {/* Desktop Navigation */}
             <nav className="hidden md:flex items-center space-x-8">
-              <a href="/" className="text-white hover:text-red-400 transition-colors">
+              <Link
+                href="/"
+                className={`transition-colors ${
+                  pathname === '/' ? 'text-red-400' : 'text-gray-300 hover:text-white'
+                }`}
+              >
                 Home
-              </a>
-              <a href="/movies" className="text-gray-300 hover:text-white transition-colors">
+              </Link>
+              <Link
+                href="/movies"
+                className={`transition-colors ${
+                  pathname === '/movies' ? 'text-red-400' : 'text-gray-300 hover:text-white'
+                }`}
+              >
                 Movies
-              </a>
-              <a href="/tv-shows" className="text-gray-300 hover:text-white transition-colors">
+              </Link>
+              <Link
+                href="/tv-shows"
+                className={`transition-colors ${
+                  pathname === '/tv-shows' ? 'text-red-400' : 'text-gray-300 hover:text-white'
+                }`}
+              >
                 TV Shows
-              </a>
-              <a href="/watchlist" className="text-gray-300 hover:text-white transition-colors">
+              </Link>
+              <Link
+                href="/watchlist"
+                className={`transition-colors ${
+                  pathname === '/watchlist' ? 'text-red-400' : 'text-gray-300 hover:text-white'
+                }`}
+              >
                 My List
-              </a>
+              </Link>
             </nav>
 
             {/* Search and Actions */}
@@ -234,18 +257,42 @@ const Header: React.FC<HeaderProps> = ({
                   </button>
                 </div>
                 <nav className="space-y-4">
-                  <a href="#" className="block text-white hover:text-red-400 transition-colors py-2">
+                  <Link
+                    href="/"
+                    className={`block transition-colors py-2 ${
+                      pathname === '/' ? 'text-red-400' : 'text-gray-300 hover:text-white'
+                    }`}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
                     Home
-                  </a>
-                  <a href="#" className="block text-gray-300 hover:text-white transition-colors py-2">
+                  </Link>
+                  <Link
+                    href="/movies"
+                    className={`block transition-colors py-2 ${
+                      pathname === '/movies' ? 'text-red-400' : 'text-gray-300 hover:text-white'
+                    }`}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
                     Movies
-                  </a>
-                  <a href="#" className="block text-gray-300 hover:text-white transition-colors py-2">
+                  </Link>
+                  <Link
+                    href="/tv-shows"
+                    className={`block transition-colors py-2 ${
+                      pathname === '/tv-shows' ? 'text-red-400' : 'text-gray-300 hover:text-white'
+                    }`}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
                     TV Shows
-                  </a>
-                  <a href="#" className="block text-gray-300 hover:text-white transition-colors py-2">
+                  </Link>
+                  <Link
+                    href="/watchlist"
+                    className={`block transition-colors py-2 ${
+                      pathname === '/watchlist' ? 'text-red-400' : 'text-gray-300 hover:text-white'
+                    }`}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
                     My List
-                  </a>
+                  </Link>
                 </nav>
               </div>
             </motion.div>

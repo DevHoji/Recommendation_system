@@ -89,7 +89,7 @@ export default function WatchlistPage() {
           searchQuery=""
           isSearching={false}
         />
-        <main className="main-content pt-20">
+        <main className="main-content">
           <div className="glass-container">
             <div className="flex items-center justify-center py-20">
               <div className="w-8 h-8 border-2 border-red-500 border-t-transparent rounded-full animate-spin" />
@@ -109,7 +109,7 @@ export default function WatchlistPage() {
         isSearching={false}
       />
 
-      <main className="main-content pt-20">
+      <main className="main-content">
         <div className="glass-container">
           <motion.div
             initial={{ opacity: 0, y: 20 }}

@@ -133,7 +133,7 @@ export default function Home() {
           watchlist={watchlist}
         />
       ) : (
-        <main className="main-content pt-20">
+        <main className="main-content">
           <div className="glass-container">
             <h1 className="text-3xl font-bold text-white mb-8">
               Search Results for "{searchQuery}"

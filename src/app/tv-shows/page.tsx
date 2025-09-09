@@ -21,7 +21,7 @@ export default function TVShowsPage() {
         isSearching={false}
       />
 
-      <main className="main-content pt-20">
+      <main className="main-content">
         <div className="glass-container">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
