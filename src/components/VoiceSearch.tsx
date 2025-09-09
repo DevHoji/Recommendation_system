@@ -16,12 +16,12 @@ const VoiceSearch: React.FC<VoiceSearchProps> = ({ isOpen, onClose, onResult }) 
   const [transcript, setTranscript] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const recognitionRef = useRef<any>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     if (typeof window !== 'undefined' && 'webkitSpeechRecognition' in window) {
-      const SpeechRecognition = window.webkitSpeechRecognition || window.SpeechRecognition;
+      const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
       recognitionRef.current = new SpeechRecognition();
       
       const recognition = recognitionRef.current;
@@ -35,7 +35,7 @@ const VoiceSearch: React.FC<VoiceSearchProps> = ({ isOpen, onClose, onResult }) 
         setTranscript('');
       };
 
-      recognition.onresult = (event) => {
+      recognition.onresult = (event: any) => {
         let finalTranscript = '';
         let interimTranscript = '';
 
@@ -56,7 +56,7 @@ const VoiceSearch: React.FC<VoiceSearchProps> = ({ isOpen, onClose, onResult }) 
         }
       };
 
-      recognition.onerror = (event) => {
+      recognition.onerror = (event: any) => {
         setIsListening(false);
         setError(`Speech recognition error: ${event.error}`);
         toast.error('Voice recognition failed. Please try again.');

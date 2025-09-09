@@ -163,7 +163,7 @@ export default function Home() {
             <MovieGrid
               movies={movies}
               loading={loading}
-              onMovieClick={handleMovieSelect}
+              onMovieSelect={handleMovieSelect}
               onAddToWatchlist={handleAddToWatchlist}
               onRemoveFromWatchlist={handleRemoveFromWatchlist}
               watchlist={watchlist}
@@ -183,10 +183,8 @@ export default function Home() {
         {selectedMovie && (
           <MovieModal
             movie={selectedMovie}
+            isOpen={!!selectedMovie}
             onClose={() => setSelectedMovie(null)}
-            onAddToWatchlist={handleAddToWatchlist}
-            onRemoveFromWatchlist={handleRemoveFromWatchlist}
-            isInWatchlist={watchlist.includes(selectedMovie.movieId)}
           />
         )}
       </AnimatePresence>
@@ -197,7 +195,7 @@ export default function Home() {
           <VoiceSearch
             isOpen={isVoiceSearchOpen}
             onClose={() => setIsVoiceSearchOpen(false)}
-            onTranscriptComplete={handleVoiceSearch}
+            onResult={handleVoiceSearch}
           />
         )}
       </AnimatePresence>

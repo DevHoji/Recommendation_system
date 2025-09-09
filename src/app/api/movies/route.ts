@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
     const query = searchParams.get('q');
 
     // Search filters
-    const genre = searchParams.get('genre');
+    const genre = searchParams.get('genre') || undefined;
     const year = searchParams.get('year') ? parseInt(searchParams.get('year')!) : undefined;
     const minRating = searchParams.get('minRating') ? parseFloat(searchParams.get('minRating')!) : undefined;
     const maxRating = searchParams.get('maxRating') ? parseFloat(searchParams.get('maxRating')!) : undefined;
@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
         result = await movieService.getMovies(page, limit, filters);
       }
     } catch (dbError) {
-      console.warn('Database not available, using mock data:', dbError.message);
+      console.warn('Database not available, using mock data:', dbError instanceof Error ? dbError.message : String(dbError));
 
       // Use mock data
       let movies = allMockMovies;

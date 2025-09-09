@@ -135,10 +135,10 @@ class MovieService {
           title: movie.title,
           genres: movie.genres,
           year: movie.year,
-          averageRating: record.avgRating ? parseFloat(record.avgRating.toFixed(1)) : null,
+          averageRating: record.avgRating ? parseFloat(record.avgRating.toFixed(1)) : undefined,
           ratingCount: record.ratingCount || 0,
-          tmdbId,
-          posterUrl
+          tmdbId: tmdbId || undefined,
+          posterUrl: posterUrl || undefined
         };
       })
     );
@@ -193,10 +193,10 @@ class MovieService {
           title: movie.title,
           genres: movie.genres,
           year: movie.year,
-          averageRating: record.avgRating ? parseFloat(record.avgRating.toFixed(1)) : null,
+          averageRating: record.avgRating ? parseFloat(record.avgRating.toFixed(1)) : undefined,
           ratingCount: record.ratingCount || 0,
-          tmdbId,
-          posterUrl
+          tmdbId: tmdbId || undefined,
+          posterUrl: posterUrl || undefined
         };
       })
     );
@@ -286,12 +286,12 @@ class MovieService {
         title: movie.title,
         genres: movie.genres,
         year: movie.year,
-        averageRating: record.avgRating ? parseFloat(record.avgRating.toFixed(1)) : null,
+        averageRating: record.avgRating ? parseFloat(record.avgRating.toFixed(1)) : undefined,
         ratingCount: record.ratingCount || 0,
-        tmdbId,
-        posterUrl,
-        backdropUrl,
-        overview,
+        tmdbId: tmdbId || undefined,
+        posterUrl: posterUrl || undefined,
+        backdropUrl: backdropUrl || undefined,
+        overview: overview || undefined,
         cast,
         crew,
         videos,

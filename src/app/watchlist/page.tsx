@@ -212,9 +212,8 @@ export default function WatchlistPage() {
         {selectedMovie && (
           <MovieModal
             movie={selectedMovie}
+            isOpen={!!selectedMovie}
             onClose={() => setSelectedMovie(null)}
-            onRemoveFromWatchlist={handleRemoveFromWatchlist}
-            isInWatchlist={watchlist.includes(selectedMovie.movieId)}
           />
         )}
       </AnimatePresence>
@@ -225,7 +224,7 @@ export default function WatchlistPage() {
           <VoiceSearch
             isOpen={isVoiceSearchOpen}
             onClose={() => setIsVoiceSearchOpen(false)}
-            onTranscriptComplete={() => {}}
+            onResult={() => {}}
           />
         )}
       </AnimatePresence>

@@ -88,7 +88,7 @@ export class DatabaseInitializer {
         await neo4jService.runQuery(query);
       } catch (error) {
         // Ignore constraint/index already exists errors
-        if (!error.message.includes('already exists')) {
+        if (!(error instanceof Error && error.message.includes('already exists'))) {
           throw error;
         }
       }
@@ -118,7 +118,7 @@ export class DatabaseInitializer {
       const linksContent = fs.readFileSync(linksPath, 'utf-8');
       const linkLines = linksContent.split('\n').slice(1);
 
-      linkLines.forEach(line => {
+      linkLines.forEach((line: string) => {
         if (line.trim()) {
           const parts = line.split(',');
           if (parts.length >= 3 && parts[2]) {
@@ -134,7 +134,7 @@ export class DatabaseInitializer {
     // Import in batches of 50 (smaller batches for TMDB integration)
     const batchSize = 50;
     for (let i = 0; i < lines.length; i += batchSize) {
-      const batch = lines.slice(i, i + batchSize).filter(line => line.trim());
+      const batch = lines.slice(i, i + batchSize).filter((line: string) => line.trim());
 
       if (batch.length === 0) continue;
 
@@ -154,12 +154,12 @@ export class DatabaseInitializer {
         })
       `;
 
-      const movies = batch.map(line => {
+      const movies = batch.map((line: string) => {
         const parts = this.parseCSVLine(line);
         if (parts.length >= 3) {
           const movieId = parts[0];
           const tmdbId = tmdbLinks.get(movieId);
-          const posterUrl = tmdbId ? `https://image.tmdb.org/t/p/w500/placeholder${movieId % 10}.jpg` : null;
+          const posterUrl = tmdbId ? `https://image.tmdb.org/t/p/w500/placeholder${parseInt(movieId) % 10}.jpg` : null;
 
           return {
             movieId: movieId,
@@ -170,7 +170,7 @@ export class DatabaseInitializer {
           };
         }
         return null;
-      }).filter(movie => movie && movie.movieId && movie.title);
+      }).filter((movie: any) => movie && movie.movieId && movie.title);
 
       if (movies.length > 0) {
         await neo4jService.runQuery(query, { movies });
@@ -196,7 +196,7 @@ export class DatabaseInitializer {
 
     // Get unique user IDs
     const userIds = new Set<number>();
-    lines.forEach(line => {
+    lines.forEach((line: string) => {
       if (line.trim()) {
         const [userId] = line.split(',');
         if (userId) {
@@ -244,7 +244,7 @@ export class DatabaseInitializer {
     // Import in batches
     const batchSize = 100;
     for (let i = 0; i < lines.length; i += batchSize) {
-      const batch = lines.slice(i, i + batchSize).filter(line => line.trim());
+      const batch = lines.slice(i, i + batchSize).filter((line: string) => line.trim());
 
       if (batch.length === 0) continue;
 
@@ -258,7 +258,7 @@ export class DatabaseInitializer {
         }]->(m)
       `;
 
-      const ratings = batch.map(line => {
+      const ratings = batch.map((line: string) => {
         const [userId, movieId, rating, timestamp] = line.split(',');
         return {
           userId: parseInt(userId),
@@ -266,7 +266,7 @@ export class DatabaseInitializer {
           rating: parseFloat(rating),
           timestamp: parseInt(timestamp)
         };
-      }).filter(rating => !isNaN(rating.userId) && !isNaN(rating.movieId) && !isNaN(rating.rating));
+      }).filter((rating: any) => !isNaN(rating.userId) && !isNaN(rating.movieId) && !isNaN(rating.rating));
 
       if (ratings.length > 0) {
         await neo4jService.runQuery(query, { ratings });
@@ -296,7 +296,7 @@ export class DatabaseInitializer {
     // Import in batches
     const batchSize = 100;
     for (let i = 0; i < lines.length; i += batchSize) {
-      const batch = lines.slice(i, i + batchSize).filter(line => line.trim());
+      const batch = lines.slice(i, i + batchSize).filter((line: string) => line.trim());
 
       if (batch.length === 0) continue;
 
@@ -310,7 +310,7 @@ export class DatabaseInitializer {
         }]->(m)
       `;
 
-      const tags = batch.map(line => {
+      const tags = batch.map((line: string) => {
         const parts = line.split(',');
         if (parts.length >= 4) {
           return {
@@ -321,7 +321,7 @@ export class DatabaseInitializer {
           };
         }
         return null;
-      }).filter(tag => tag && !isNaN(tag.userId) && !isNaN(tag.movieId) && tag.tag);
+      }).filter((tag: any) => tag && !isNaN(tag.userId) && !isNaN(tag.movieId) && tag.tag);
 
       if (tags.length > 0) {
         await neo4jService.runQuery(query, { tags });

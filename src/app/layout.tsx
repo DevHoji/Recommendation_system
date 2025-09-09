@@ -1,13 +1,7 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "react-hot-toast";
 import { UserProvider } from "@/contexts/UserContext";
-
-const inter = Inter({
-  subsets: ["latin"],
-  variable: "--font-inter",
-});
 
 export const metadata: Metadata = {
   title: "CineAI - AI-Powered Movie Recommendations",
@@ -24,7 +18,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <body
-        className={`${inter.variable} font-sans antialiased bg-black text-white min-h-screen`}
+        className="font-sans antialiased bg-black text-white min-h-screen"
       >
         <UserProvider>
           {children}

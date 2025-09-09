@@ -103,7 +103,7 @@ export default function ProfilePage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-black text-white">
-        <Header onSearch={() => {}} onVoiceSearch={() => {}} searchQuery="" />
+        <Header onSearch={() => {}} onVoiceSearch={() => {}} searchQuery="" isSearching={false} />
         <main className="main-content">
           <div className="glass-container">
             <div className="flex items-center justify-center py-20">
@@ -117,7 +117,7 @@ export default function ProfilePage() {
 
   return (
     <div className="min-h-screen bg-black text-white">
-      <Header onSearch={() => {}} onVoiceSearch={() => {}} searchQuery="" />
+      <Header onSearch={() => {}} onVoiceSearch={() => {}} searchQuery="" isSearching={false} />
       
       <main className="main-content">
         {/* User Profile Header */}

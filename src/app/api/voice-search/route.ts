@@ -15,21 +15,21 @@ export async function POST(request: NextRequest) {
 
     // Process the voice search with simple pattern matching as fallback
     let voiceSearchResult;
-    let movies = [];
+    let movies: any[] = [];
     let searchPerformed = false;
 
     try {
       // Try Gemini AI first
       voiceSearchResult = await geminiService.processVoiceSearch(transcript);
     } catch (error) {
-      console.warn('Gemini AI not available, using simple pattern matching:', error.message);
+      console.warn('Gemini AI not available, using simple pattern matching:', error instanceof Error ? error.message : String(error));
 
       // Simple pattern matching fallback
       const lowerTranscript = transcript.toLowerCase();
       voiceSearchResult = {
         query: transcript,
-        intent: 'search' as const,
-        parameters: {}
+        intent: 'search' as any,
+        parameters: {} as any
       };
 
       // Extract genre

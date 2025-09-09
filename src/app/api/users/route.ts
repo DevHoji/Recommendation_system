@@ -148,9 +148,9 @@ export async function GET(request: NextRequest) {
       joinDate: userData.u.joinDate,
       isOnboarded: userData.u.isOnboarded,
       preferences: {
-        genres: userData.genres.filter(g => g),
-        moods: userData.moods.filter(m => m),
-        favoriteMovies: userData.favoriteMovies.filter(id => id)
+        genres: userData.genres.filter((g: any) => g),
+        moods: userData.moods.filter((m: any) => m),
+        favoriteMovies: userData.favoriteMovies.filter((id: any) => id)
       }
     };
 
