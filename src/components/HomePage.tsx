@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { Play, Plus, Info, Star, ChevronLeft, ChevronRight } from 'lucide-react';
 import MovieCard from './MovieCard';
 import Footer from './Footer';
+import LoadingShimmer, { HeroShimmer } from './LoadingShimmer';
 import { Movie } from '@/lib/movie-service';
 
 interface HomePageProps {
@@ -89,7 +90,7 @@ export default function HomePage({
   return (
     <div className="min-h-screen bg-black">
       {/* Hero Section */}
-      {featuredMovie && (
+      {featuredMovie ? (
         <section className="relative h-screen flex items-center justify-center overflow-hidden">
           {/* Background Image */}
           <div className="absolute inset-0">
@@ -139,10 +140,11 @@ export default function HomePage({
                   )}
                 </div>
 
-                <p className="text-xl text-gray-300 mb-8 leading-relaxed">
-                  Discover this amazing {featuredMovie.genres?.[0]?.toLowerCase() || 'movie'} 
-                  from {featuredMovie.year}. Rated {featuredMovie.averageRating?.toFixed(1) || 'highly'} 
-                  by {featuredMovie.ratingCount?.toLocaleString() || 'many'} viewers.
+                <p className="text-xl text-gray-300 mb-8 leading-relaxed max-w-2xl">
+                  {featuredMovie.genres && featuredMovie.genres.length > 0
+                    ? `An incredible ${featuredMovie.genres[0].toLowerCase()} experience that has captivated audiences worldwide.`
+                    : 'A remarkable cinematic experience that has captivated audiences worldwide.'
+                  } Join {featuredMovie.ratingCount?.toLocaleString() || 'thousands of'} viewers who have rated this movie {featuredMovie.averageRating?.toFixed(1) || 'highly'}.
                 </p>
 
                 <div className="flex space-x-4">
@@ -180,6 +182,8 @@ export default function HomePage({
             </div>
           </div>
         </section>
+      ) : (
+        <HeroShimmer />
       )}
 
       {/* Movie Sections */}
@@ -258,11 +262,7 @@ function MovieSection({
         className="glass-container"
       >
         <h2 className="text-2xl font-bold text-white mb-6">{title}</h2>
-        <div className="flex space-x-4 overflow-hidden">
-          {Array.from({ length: 6 }).map((_, index) => (
-            <div key={index} className="flex-shrink-0 w-72 h-96 glass rounded-lg animate-pulse" />
-          ))}
-        </div>
+        <LoadingShimmer count={6} />
       </motion.div>
     );
   }
