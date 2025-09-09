@@ -27,29 +27,96 @@ export async function GET(
     const userRatings = await neo4jService.runQuery(userRatingsQuery, { userId: parseInt(userId) });
 
     if (userRatings.length === 0) {
-      // New user - return popular movies
-      const popularMoviesQuery = `
+      // New user - use onboarding preferences for recommendations
+      console.log('New user detected, using onboarding preferences');
+
+      // First, try to get recommendations based on liked genres from onboarding
+      const genreBasedQuery = `
+        MATCH (u:User {id: $userId})-[:LIKES_GENRE]->(g:Genre)
         MATCH (m:Movie)
-        WHERE m.averageRating IS NOT NULL AND m.ratingCount > 50
-        RETURN m.movieId as movieId, m.title as title, m.averageRating as score, 
-               m.genres as genres, m.year as year, m.posterUrl as posterUrl
+        WHERE any(genre IN m.genres WHERE genre = g.name)
+          AND m.averageRating >= 3.5
+          AND m.ratingCount > 10
+        WITH m, collect(g.name) as matchedGenres
+        RETURN m.movieId as movieId, m.title as title, m.averageRating as score,
+               m.genres as genres, m.year as year, m.posterUrl as posterUrl,
+               matchedGenres
         ORDER BY m.averageRating DESC, m.ratingCount DESC
-        LIMIT 20
+        LIMIT 15
       `;
 
-      const popularMovies = await neo4jService.runQuery(popularMoviesQuery);
-      
+      const genreRecommendations = await neo4jService.runQuery(genreBasedQuery, { userId: parseInt(userId) });
+
+      // Second, get recommendations based on favorite movies from onboarding
+      const movieBasedQuery = `
+        MATCH (u:User {id: $userId})-[:LIKES_MOVIE]->(liked:Movie)
+        MATCH (similar:Movie)
+        WHERE any(likedGenre IN liked.genres WHERE likedGenre IN similar.genres)
+          AND similar.movieId <> liked.movieId
+          AND similar.averageRating >= 3.5
+          AND similar.ratingCount > 10
+        WITH similar, count(liked) as similarity
+        RETURN similar.movieId as movieId, similar.title as title, similar.averageRating as score,
+               similar.genres as genres, similar.year as year, similar.posterUrl as posterUrl,
+               similarity
+        ORDER BY similarity DESC, similar.averageRating DESC
+        LIMIT 10
+      `;
+
+      const movieRecommendations = await neo4jService.runQuery(movieBasedQuery, { userId: parseInt(userId) });
+
+      // Combine and deduplicate recommendations
+      const allRecommendations = [...genreRecommendations, ...movieRecommendations];
+      const uniqueRecommendations = allRecommendations.filter((movie, index, self) =>
+        index === self.findIndex(m => m.movieId === movie.movieId)
+      ).slice(0, 20);
+
+      // If no preference-based recommendations, fall back to popular movies
+      if (uniqueRecommendations.length === 0) {
+        const popularMoviesQuery = `
+          MATCH (m:Movie)
+          WHERE m.averageRating IS NOT NULL AND m.ratingCount > 50
+          RETURN m.movieId as movieId, m.title as title, m.averageRating as score,
+                 m.genres as genres, m.year as year, m.posterUrl as posterUrl
+          ORDER BY m.averageRating DESC, m.ratingCount DESC
+          LIMIT 20
+        `;
+
+        const popularMovies = await neo4jService.runQuery(popularMoviesQuery);
+
+        return NextResponse.json({
+          success: true,
+          data: popularMovies.map(movie => ({
+            movieId: movie.movieId,
+            title: movie.title,
+            score: movie.score || 0,
+            genres: movie.genres || [],
+            year: movie.year,
+            posterUrl: movie.posterUrl,
+            reason: "Popular movies (no preferences found)"
+          })),
+          userId: parseInt(userId),
+          totalRecommendations: popularMovies.length,
+          note: "Using popular movies - no user preferences found"
+        });
+      }
+
       return NextResponse.json({
         success: true,
-        data: popularMovies.map(movie => ({
+        data: uniqueRecommendations.map(movie => ({
           movieId: movie.movieId,
           title: movie.title,
           score: movie.score || 0,
           genres: movie.genres || [],
           year: movie.year,
           posterUrl: movie.posterUrl,
-          reason: "Popular movies"
-        }))
+          reason: movie.matchedGenres ?
+            `Matches your favorite genres: ${movie.matchedGenres.join(', ')}` :
+            `Similar to movies you liked`
+        })),
+        userId: parseInt(userId),
+        totalRecommendations: uniqueRecommendations.length,
+        note: "Using onboarding preferences for new user recommendations"
       });
     }
 
@@ -97,27 +164,41 @@ export async function GET(
       });
     }
 
-    // Content-based filtering - recommend by favorite genres
-    if (recommendations.length < 10 && favoriteGenres.length > 0) {
-      const contentBasedQuery = `
-        MATCH (m:Movie)
-        WHERE any(genre IN m.genres WHERE genre IN $favoriteGenres)
-          AND m.averageRating >= 3.5
-          AND NOT EXISTS {
-            MATCH (u:User {userId: $userId})-[:RATED]->(m)
-          }
-        RETURN m.movieId as movieId, m.title as title, m.averageRating as score,
-               m.genres as genres, m.year as year, m.posterUrl as posterUrl
-        ORDER BY m.averageRating DESC, m.ratingCount DESC
-        LIMIT ${10 - recommendations.length}
+    // Content-based filtering - use both rating history and onboarding preferences
+    if (recommendations.length < 10) {
+      // Get user's onboarding genre preferences
+      const onboardingGenresQuery = `
+        MATCH (u:User {id: $userId})-[:LIKES_GENRE]->(g:Genre)
+        RETURN collect(g.name) as likedGenres
       `;
 
-      const contentRecommendations = await neo4jService.runQuery(contentBasedQuery, {
-        favoriteGenres,
-        userId: parseInt(userId)
-      });
+      const onboardingResult = await neo4jService.runQuery(onboardingGenresQuery, { userId: parseInt(userId) });
+      const onboardingGenres = onboardingResult.length > 0 ? onboardingResult[0].likedGenres : [];
 
-      recommendations = [...recommendations, ...contentRecommendations];
+      // Combine genres from ratings and onboarding
+      const allFavoriteGenres = [...new Set([...favoriteGenres, ...onboardingGenres])];
+
+      if (allFavoriteGenres.length > 0) {
+        const contentBasedQuery = `
+          MATCH (m:Movie)
+          WHERE any(genre IN m.genres WHERE genre IN $favoriteGenres)
+            AND m.averageRating >= 3.5
+            AND NOT EXISTS {
+              MATCH (u:User {id: $userId})-[:RATED]->(m)
+            }
+          RETURN m.movieId as movieId, m.title as title, m.averageRating as score,
+                 m.genres as genres, m.year as year, m.posterUrl as posterUrl
+          ORDER BY m.averageRating DESC, m.ratingCount DESC
+          LIMIT ${10 - recommendations.length}
+        `;
+
+        const contentRecommendations = await neo4jService.runQuery(contentBasedQuery, {
+          favoriteGenres: allFavoriteGenres,
+          userId: parseInt(userId)
+        });
+
+        recommendations = [...recommendations, ...contentRecommendations];
+      }
     }
 
     // Add recommendation reasons
@@ -177,6 +258,9 @@ function getRecommendationReason(movie: any, favoriteGenres: string[], userRatin
 }
 
 function getMockRecommendations(userId: string) {
+  // In a real Neo4j implementation, this would query user preferences
+  // For mock data, we simulate preference-based recommendations
+
   const mockRecommendations = [
     {
       movieId: 1,
@@ -185,25 +269,25 @@ function getMockRecommendations(userId: string) {
       genres: ["Drama"],
       year: 1994,
       posterUrl: "https://image.tmdb.org/t/p/w500/q6y0Go1tsGEsmtFryDOJo3dEmqu.jpg",
-      reason: "Highly rated drama"
+      reason: "Based on your preference for Drama movies"
     },
     {
-      movieId: 2,
-      title: "The Godfather",
-      score: 4.7,
-      genres: ["Crime", "Drama"],
-      year: 1972,
-      posterUrl: "https://image.tmdb.org/t/p/w500/3bhkrj58Vtu7enYsRolD1fZdja1.jpg",
-      reason: "Classic crime drama"
+      movieId: 6,
+      title: "Heat",
+      score: 4.0,
+      genres: ["Action", "Crime", "Thriller"],
+      year: 1995,
+      posterUrl: "https://image.tmdb.org/t/p/w500/zMyfPUelumio3tiDKPffaUpsQTD.jpg",
+      reason: "Based on your preference for Action movies"
     },
     {
-      movieId: 3,
-      title: "Pulp Fiction",
-      score: 4.6,
-      genres: ["Crime", "Drama"],
-      year: 1994,
-      posterUrl: "https://image.tmdb.org/t/p/w500/d5iIlFn5s0ImszYzBPb8JPIfbXD.jpg",
-      reason: "Popular choice"
+      movieId: 10,
+      title: "GoldenEye",
+      score: 3.8,
+      genres: ["Action", "Adventure", "Thriller"],
+      year: 1995,
+      posterUrl: "https://image.tmdb.org/t/p/w500/5c0ovjT41KnYIHYuF4AWsTe3sKh.jpg",
+      reason: "Similar to movies you liked during onboarding"
     }
   ];
 
