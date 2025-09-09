@@ -13,8 +13,6 @@ export const metadata: Metadata = {
   description: "Discover your next favorite movie with AI-powered recommendations, voice search, and personalized suggestions.",
   keywords: ["movies", "recommendations", "AI", "voice search", "cinema", "films"],
   authors: [{ name: "CineAI Team" }],
-  viewport: "width=device-width, initial-scale=1",
-  themeColor: "#000000",
 };
 
 export default function RootLayout({
