@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { Play, Plus, Info, Star, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Play, Plus, Info, Star, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { useUser } from '@/contexts/UserContext';
 import MovieCard from './MovieCard';
 import Footer from './Footer';
@@ -22,6 +22,13 @@ interface MovieSection {
   loading: boolean;
 }
 
+interface TrailerData {
+  key: string;
+  name: string;
+  site: string;
+  type: string;
+}
+
 export default function HomePage({
   onMovieSelect,
   onAddToWatchlist,
@@ -39,6 +46,11 @@ export default function HomePage({
     { title: 'Drama Movies', movies: [], loading: true },
     { title: 'Sci-Fi Movies', movies: [], loading: true }
   ]);
+
+  // Trailer modal state
+  const [selectedTrailer, setSelectedTrailer] = useState<TrailerData | null>(null);
+  const [isTrailerModalOpen, setIsTrailerModalOpen] = useState(false);
+  const [loadingTrailer, setLoadingTrailer] = useState(false);
 
   useEffect(() => {
     loadHomepageData();
@@ -90,6 +102,44 @@ export default function HomePage({
     } else {
       onAddToWatchlist?.(movie);
     }
+  };
+
+  const handleWatchTrailer = async (movie: Movie) => {
+    if (!movie.tmdbId) {
+      console.error('No TMDB ID available for movie:', movie.title);
+      return;
+    }
+
+    setLoadingTrailer(true);
+    try {
+      const response = await fetch(`/api/movies/${movie.movieId}/videos`);
+      const data = await response.json();
+
+      if (data.success && data.videos && data.videos.length > 0) {
+        // Find the first trailer or teaser
+        const trailer = data.videos.find((video: any) =>
+          video.type === 'Trailer' && video.site === 'YouTube'
+        ) || data.videos.find((video: any) =>
+          video.type === 'Teaser' && video.site === 'YouTube'
+        ) || data.videos[0];
+
+        if (trailer) {
+          setSelectedTrailer(trailer);
+          setIsTrailerModalOpen(true);
+        }
+      } else {
+        console.error('No trailers found for movie:', movie.title);
+      }
+    } catch (error) {
+      console.error('Error fetching trailer:', error);
+    } finally {
+      setLoadingTrailer(false);
+    }
+  };
+
+  const closeTrailerModal = () => {
+    setIsTrailerModalOpen(false);
+    setSelectedTrailer(null);
   };
 
   return (
@@ -156,11 +206,12 @@ export default function HomePage({
                   <motion.button
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
-                    onClick={() => onMovieSelect?.(featuredMovie)}
-                    className="flex items-center space-x-2 bg-white text-black px-8 py-4 rounded-lg font-semibold hover:bg-gray-200 transition-colors"
+                    onClick={() => handleWatchTrailer(featuredMovie)}
+                    disabled={loadingTrailer}
+                    className="flex items-center space-x-2 bg-white text-black px-8 py-4 rounded-lg font-semibold hover:bg-gray-200 transition-colors disabled:opacity-50"
                   >
                     <Play className="w-5 h-5" />
-                    <span>Play</span>
+                    <span>{loadingTrailer ? 'Loading...' : 'Watch Trailer'}</span>
                   </motion.button>
 
                   <motion.button
@@ -195,7 +246,7 @@ export default function HomePage({
       <div className="relative z-10 -mt-32 pb-20">
         <div className="space-y-12">
           {sections.map((section, sectionIndex) => (
-            <MovieSection
+            <InfiniteCarouselSection
               key={section.title}
               title={section.title}
               movies={section.movies}
@@ -203,12 +254,24 @@ export default function HomePage({
               onMovieSelect={onMovieSelect}
               onAddToWatchlist={onAddToWatchlist}
               onRemoveFromWatchlist={onRemoveFromWatchlist}
+              onWatchTrailer={handleWatchTrailer}
               watchlist={watchlist}
               delay={sectionIndex * 0.1}
+              direction={sectionIndex % 2 === 0 ? 'left' : 'right'}
             />
           ))}
         </div>
       </div>
+
+      {/* Trailer Modal */}
+      <AnimatePresence>
+        {isTrailerModalOpen && selectedTrailer && (
+          <TrailerModal
+            trailer={selectedTrailer}
+            onClose={closeTrailerModal}
+          />
+        )}
+      </AnimatePresence>
 
       {/* Footer */}
       <Footer />
@@ -216,47 +279,32 @@ export default function HomePage({
   );
 }
 
-interface MovieSectionProps {
+interface InfiniteCarouselSectionProps {
   title: string;
   movies: Movie[];
   loading: boolean;
   onMovieSelect?: (movie: Movie) => void;
   onAddToWatchlist?: (movie: Movie) => void;
   onRemoveFromWatchlist?: (movie: Movie) => void;
+  onWatchTrailer?: (movie: Movie) => void;
   watchlist: number[];
   delay?: number;
+  direction: 'left' | 'right';
 }
 
-function MovieSection({
+function InfiniteCarouselSection({
   title,
   movies,
   loading,
   onMovieSelect,
   onAddToWatchlist,
   onRemoveFromWatchlist,
+  onWatchTrailer,
   watchlist,
-  delay = 0
-}: MovieSectionProps) {
-  const [scrollPosition, setScrollPosition] = useState(0);
-  const [canScrollLeft, setCanScrollLeft] = useState(false);
-  const [canScrollRight, setCanScrollRight] = useState(true);
-
-  const scroll = (direction: 'left' | 'right') => {
-    const container = document.getElementById(`scroll-${title.replace(/\s+/g, '-')}`);
-    if (container) {
-      const scrollAmount = 320 * 4; // Width of 4 cards
-      const newPosition = direction === 'left' 
-        ? Math.max(0, scrollPosition - scrollAmount)
-        : scrollPosition + scrollAmount;
-      
-      container.scrollTo({ left: newPosition, behavior: 'smooth' });
-      setScrollPosition(newPosition);
-      
-      // Update scroll button states
-      setCanScrollLeft(newPosition > 0);
-      setCanScrollRight(newPosition < container.scrollWidth - container.clientWidth);
-    }
-  };
+  delay = 0,
+  direction
+}: InfiniteCarouselSectionProps) {
+  const carouselRef = useRef<HTMLDivElement>(null);
 
   if (loading) {
     return (
@@ -276,53 +324,308 @@ function MovieSection({
     return null;
   }
 
+  // Duplicate movies for infinite scroll effect
+  const duplicatedMovies = [...movies, ...movies, ...movies];
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay, duration: 0.6 }}
-      className="glass-container relative group"
+      className="glass-container overflow-hidden"
     >
       <h2 className="text-2xl font-bold text-white mb-6">{title}</h2>
-      
-      {/* Scroll Buttons */}
-      {canScrollLeft && (
-        <button
-          onClick={() => scroll('left')}
-          className="absolute left-4 top-1/2 -translate-y-1/2 z-10 glass-strong rounded-full p-3 opacity-0 group-hover:opacity-100 transition-opacity hover:scale-110"
-        >
-          <ChevronLeft className="w-6 h-6 text-white" />
-        </button>
-      )}
-      
-      {canScrollRight && (
-        <button
-          onClick={() => scroll('right')}
-          className="absolute right-4 top-1/2 -translate-y-1/2 z-10 glass-strong rounded-full p-3 opacity-0 group-hover:opacity-100 transition-opacity hover:scale-110"
-        >
-          <ChevronRight className="w-6 h-6 text-white" />
-        </button>
-      )}
 
-      {/* Movie Cards Carousel */}
-      <div
-        id={`scroll-${title.replace(/\s+/g, '-')}`}
-        className="flex space-x-4 overflow-x-auto scrollbar-hide pb-4"
-        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-      >
-        {movies.map((movie) => (
-          <div key={movie.movieId} className="flex-shrink-0 w-72">
-            <MovieCard
-              movie={movie}
-              onMovieClick={onMovieSelect}
-              onAddToWatchlist={onAddToWatchlist}
-              onRemoveFromWatchlist={onRemoveFromWatchlist}
-              isInWatchlist={watchlist.includes(movie.movieId)}
-              size="medium"
-            />
-          </div>
-        ))}
+      {/* Infinite Carousel */}
+      <div className="relative overflow-hidden">
+        <motion.div
+          ref={carouselRef}
+          className="flex space-x-4"
+          animate={{
+            x: direction === 'left' ? [0, -100 * movies.length] : [-100 * movies.length, 0]
+          }}
+          transition={{
+            x: {
+              repeat: Infinity,
+              repeatType: "loop",
+              duration: movies.length * 3, // Adjust speed here
+              ease: "linear",
+            },
+          }}
+        >
+          {duplicatedMovies.map((movie, index) => (
+            <div key={`${movie.movieId}-${index}`} className="flex-shrink-0 w-72">
+              <EnhancedMovieCard
+                movie={movie}
+                onMovieClick={onMovieSelect}
+                onAddToWatchlist={onAddToWatchlist}
+                onRemoveFromWatchlist={onRemoveFromWatchlist}
+                onWatchTrailer={onWatchTrailer}
+                isInWatchlist={watchlist.includes(movie.movieId)}
+                size="medium"
+              />
+            </div>
+          ))}
+        </motion.div>
       </div>
+    </motion.div>
+  );
+}
+
+// Enhanced Movie Card with Trailer Button
+interface EnhancedMovieCardProps {
+  movie: Movie;
+  onMovieClick?: (movie: Movie) => void;
+  onAddToWatchlist?: (movie: Movie) => void;
+  onRemoveFromWatchlist?: (movie: Movie) => void;
+  onWatchTrailer?: (movie: Movie) => void;
+  isInWatchlist?: boolean;
+  size?: 'small' | 'medium' | 'large';
+}
+
+function EnhancedMovieCard({
+  movie,
+  onMovieClick,
+  onAddToWatchlist,
+  onRemoveFromWatchlist,
+  onWatchTrailer,
+  isInWatchlist = false,
+  size = 'medium'
+}: EnhancedMovieCardProps) {
+  const [imageLoaded, setImageLoaded] = useState(false);
+  const [imageError, setImageError] = useState(false);
+
+  const sizeClasses = {
+    small: 'w-32 h-48',
+    medium: 'w-48 h-72',
+    large: 'w-64 h-96'
+  };
+
+  const handleWatchlistToggle = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (isInWatchlist && onRemoveFromWatchlist) {
+      onRemoveFromWatchlist(movie);
+    } else if (!isInWatchlist && onAddToWatchlist) {
+      onAddToWatchlist(movie);
+    }
+  };
+
+  const handleWatchTrailer = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onWatchTrailer) {
+      onWatchTrailer(movie);
+    }
+  };
+
+  // Enhanced poster URL with better fallback
+  const getPosterUrl = (movie: Movie) => {
+    if (movie.posterUrl) {
+      return movie.posterUrl;
+    }
+    // Fallback to TMDB poster if available
+    if (movie.tmdbId) {
+      return `https://image.tmdb.org/t/p/w500/${movie.tmdbId}.jpg`;
+    }
+    return null;
+  };
+
+  const posterUrl = getPosterUrl(movie);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      whileHover={{ scale: 1.05, zIndex: 10 }}
+      transition={{ duration: 0.3 }}
+      onClick={() => onMovieClick?.(movie)}
+      className={`relative group cursor-pointer movie-card ${sizeClasses[size]}`}
+    >
+      {/* Movie Poster */}
+      <div className="relative w-full h-full glass rounded-lg overflow-hidden bg-gray-900/50">
+        {!imageError && posterUrl ? (
+          <>
+            <img
+              src={posterUrl}
+              alt={movie.title}
+              className={`w-full h-full object-cover transition-opacity duration-300 ${
+                imageLoaded ? 'opacity-100' : 'opacity-0'
+              }`}
+              onLoad={() => setImageLoaded(true)}
+              onError={() => setImageError(true)}
+            />
+            {!imageLoaded && (
+              <div className="absolute inset-0 bg-gray-800 animate-pulse flex items-center justify-center">
+                <div className="w-12 h-12 border-2 border-gray-600 border-t-transparent rounded-full animate-spin" />
+              </div>
+            )}
+          </>
+        ) : (
+          <div className="w-full h-full bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center">
+            <div className="text-center p-4">
+              <div className="w-16 h-16 bg-gray-700 rounded-full flex items-center justify-center mb-3">
+                <Play className="w-8 h-8 text-gray-400" />
+              </div>
+              <h3 className="text-white text-sm font-medium line-clamp-2 mb-1">
+                {movie.title}
+              </h3>
+              <p className="text-gray-400 text-xs">{movie.year}</p>
+            </div>
+          </div>
+        )}
+
+        {/* Gradient Overlay */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+
+        {/* Hover Actions */}
+        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+          <div className="flex space-x-2">
+            <motion.button
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+              onClick={handleWatchTrailer}
+              className="bg-red-600/80 backdrop-blur-sm rounded-full p-3 hover:bg-red-700/80 transition-colors"
+              title="Watch Trailer"
+            >
+              <Play className="w-5 h-5 text-white fill-white" />
+            </motion.button>
+
+            <motion.button
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+              onClick={handleWatchlistToggle}
+              className={`backdrop-blur-sm rounded-full p-3 transition-colors ${
+                isInWatchlist
+                  ? 'bg-green-600/80 hover:bg-green-700/80'
+                  : 'bg-white/20 hover:bg-white/30'
+              }`}
+              title={isInWatchlist ? 'Remove from Watchlist' : 'Add to Watchlist'}
+            >
+              <Plus className={`w-5 h-5 ${isInWatchlist ? 'text-white rotate-45' : 'text-white'}`} />
+            </motion.button>
+          </div>
+        </div>
+
+        {/* Rating Badge */}
+        {movie.averageRating && (
+          <div className="absolute top-2 left-2 glass-subtle rounded-md px-2 py-1 flex items-center space-x-1">
+            <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" />
+            <span className="text-white text-xs font-medium">
+              {movie.averageRating.toFixed(1)}
+            </span>
+          </div>
+        )}
+
+        {/* Year Badge */}
+        <div className="absolute top-2 right-2 glass-subtle rounded-md px-2 py-1">
+          <span className="text-white text-xs font-medium">{movie.year}</span>
+        </div>
+      </div>
+
+      {/* Movie Info (appears on hover) */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 0, y: 10 }}
+        whileHover={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1 }}
+        className="absolute -bottom-20 left-0 right-0 glass-strong rounded-lg p-4 shadow-xl group-hover:opacity-100 opacity-0"
+      >
+        <h3 className="text-white font-semibold text-sm mb-2 line-clamp-2">
+          {movie.title}
+        </h3>
+
+        {/* Genres */}
+        {movie.genres && movie.genres.length > 0 && (
+          <div className="flex flex-wrap gap-1 mb-2">
+            {movie.genres.slice(0, 3).map((genre) => (
+              <span
+                key={genre}
+                className="text-xs px-2 py-1 rounded-full text-white bg-gray-700/50"
+              >
+                {genre}
+              </span>
+            ))}
+          </div>
+        )}
+
+        {/* Stats */}
+        <div className="flex items-center justify-between text-xs text-gray-400">
+          <div className="flex items-center space-x-3">
+            {movie.averageRating && (
+              <div className="flex items-center space-x-1">
+                <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" />
+                <span>{movie.averageRating.toFixed(1)}</span>
+              </div>
+            )}
+            <span>{movie.year}</span>
+          </div>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+}
+
+// Trailer Modal Component
+interface TrailerModalProps {
+  trailer: TrailerData;
+  onClose: () => void;
+}
+
+function TrailerModal({ trailer, onClose }: TrailerModalProps) {
+  const [isLoading, setIsLoading] = useState(true);
+
+  const getYouTubeEmbedUrl = (key: string) => {
+    return `https://www.youtube.com/embed/${key}?autoplay=1&rel=0&modestbranding=1`;
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-4"
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ scale: 0.8, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        exit={{ scale: 0.8, opacity: 0 }}
+        className="relative w-full max-w-4xl aspect-video bg-black rounded-lg overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Close Button */}
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 z-10 bg-black/50 hover:bg-black/70 rounded-full p-2 transition-colors"
+        >
+          <X className="w-6 h-6 text-white" />
+        </button>
+
+        {/* Loading Spinner */}
+        {isLoading && (
+          <div className="absolute inset-0 flex items-center justify-center bg-gray-900">
+            <div className="w-12 h-12 border-2 border-red-600 border-t-transparent rounded-full animate-spin" />
+          </div>
+        )}
+
+        {/* YouTube Embed */}
+        {trailer.site === 'YouTube' && (
+          <iframe
+            src={getYouTubeEmbedUrl(trailer.key)}
+            title={trailer.name}
+            className="w-full h-full"
+            frameBorder="0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+            onLoad={() => setIsLoading(false)}
+          />
+        )}
+
+        {/* Trailer Info */}
+        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-6">
+          <h3 className="text-white text-xl font-semibold mb-2">{trailer.name}</h3>
+          <p className="text-gray-300 text-sm">{trailer.type} • {trailer.site}</p>
+        </div>
+      </motion.div>
     </motion.div>
   );
 }

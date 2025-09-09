@@ -281,3 +281,57 @@ footer.glass-strong {
   background: rgba(255, 255, 255, 0.3);
   transform: translateY(-1px);
 }
+
+/* Scrollbar hiding */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Infinite Carousel Animations */
+@keyframes scroll-left {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-100%);
+  }
+}
+
+@keyframes scroll-right {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(0);
+  }
+}
+
+.carousel-left {
+  animation: scroll-left 60s linear infinite;
+}
+
+.carousel-right {
+  animation: scroll-right 60s linear infinite;
+}
+
+/* Pause animation on hover */
+.carousel-container:hover .carousel-left,
+.carousel-container:hover .carousel-right {
+  animation-play-state: paused;
+}
+
+/* Enhanced movie card hover effects */
+.movie-card {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.movie-card:hover {
+  transform: scale(1.05) translateZ(0);
+  z-index: 20;
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+}
