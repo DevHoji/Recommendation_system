@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Play, TrendingUp, Star, Clock, Database } from 'lucide-react';
+import { useUser } from '@/contexts/UserContext';
 import Header from '@/components/Header';
 import HomePage from '@/components/HomePage';
 import MovieGrid from '@/components/MovieGrid';
@@ -11,8 +12,11 @@ import VoiceSearch from '@/components/VoiceSearch';
 import { Movie } from '@/lib/movie-service';
 import { debounce } from '@/lib/utils';
 import toast from 'react-hot-toast';
+import { useRouter } from 'next/navigation';
 
 export default function Home() {
+  const { user, isAuthenticated, isLoading } = useUser();
+  const router = useRouter();
   const [currentView, setCurrentView] = useState<'home' | 'search'>('home');
   const [movies, setMovies] = useState<Movie[]>([]);
   const [loading, setLoading] = useState(false);
@@ -23,6 +27,13 @@ export default function Home() {
   const [watchlist, setWatchlist] = useState<number[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
+
+  // Redirect to onboarding if user is not authenticated or not onboarded
+  useEffect(() => {
+    if (!isLoading && (!isAuthenticated || (user && !user.isOnboarded))) {
+      router.push('/onboarding');
+    }
+  }, [isAuthenticated, user, isLoading, router]);
 
   // Load watchlist from localStorage
   useEffect(() => {
@@ -115,6 +126,23 @@ export default function Home() {
   const handleMovieSelect = (movie: Movie) => {
     setSelectedMovie(movie);
   };
+
+  // Show loading screen while checking authentication
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <div className="w-12 h-12 border-4 border-red-500/30 border-t-red-500 rounded-full animate-spin mx-auto" />
+          <p className="text-white text-lg">Loading CineAI...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Don't render main content if user is not authenticated or onboarded
+  if (!isAuthenticated || (user && !user.isOnboarded)) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-black text-white">

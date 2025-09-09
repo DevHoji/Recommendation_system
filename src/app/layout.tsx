@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "react-hot-toast";
+import { UserProvider } from "@/contexts/UserContext";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -25,18 +26,20 @@ export default function RootLayout({
       <body
         className={`${inter.variable} font-sans antialiased bg-black text-white min-h-screen`}
       >
-        {children}
-        <Toaster
-          position="top-right"
-          toastOptions={{
-            duration: 4000,
-            style: {
-              background: '#1f2937',
-              color: '#f9fafb',
-              border: '1px solid #374151',
-            },
-          }}
-        />
+        <UserProvider>
+          {children}
+          <Toaster
+            position="top-right"
+            toastOptions={{
+              duration: 4000,
+              style: {
+                background: '#1f2937',
+                color: '#f9fafb',
+                border: '1px solid #374151',
+              },
+            }}
+          />
+        </UserProvider>
       </body>
     </html>
   );

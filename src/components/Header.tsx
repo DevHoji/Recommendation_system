@@ -3,8 +3,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Search, Mic, MicOff, User, Heart, Menu, X } from 'lucide-react';
+import { Search, Mic, MicOff, User, Heart, Menu, X, LogOut } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useUser } from '@/contexts/UserContext';
 import VoiceSearch from './VoiceSearch';
 
 interface HeaderProps {
@@ -20,9 +21,11 @@ const Header: React.FC<HeaderProps> = ({
   searchQuery,
   isSearching
 }) => {
+  const { user, logout } = useUser();
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isVoiceSearchOpen, setIsVoiceSearchOpen] = useState(false);
+  const [showUserMenu, setShowUserMenu] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const pathname = usePathname();
 
@@ -178,13 +181,51 @@ const Header: React.FC<HeaderProps> = ({
               </Link>
 
               {/* User Menu */}
-              <Link
-                href="/profile"
-                className="p-2 text-gray-300 hover:text-white transition-colors"
-                title="User Profile"
-              >
-                <User className="w-5 h-5" />
-              </Link>
+              <div className="relative">
+                <button
+                  onClick={() => setShowUserMenu(!showUserMenu)}
+                  className="flex items-center space-x-2 p-2 text-gray-300 hover:text-white transition-colors"
+                  title={`Welcome, ${user?.username || 'User'}`}
+                >
+                  <User className="w-5 h-5" />
+                  <span className="hidden md:block text-sm font-medium">
+                    {user?.username || 'User'}
+                  </span>
+                </button>
+
+                {/* User Dropdown Menu */}
+                <AnimatePresence>
+                  {showUserMenu && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      className="absolute right-0 top-full mt-2 w-48 bg-black/90 backdrop-blur-md border border-white/10 rounded-lg shadow-lg z-50"
+                    >
+                      <div className="p-2">
+                        <Link
+                          href="/profile"
+                          className="flex items-center space-x-2 w-full px-3 py-2 text-gray-300 hover:text-white hover:bg-white/10 rounded-md transition-colors"
+                          onClick={() => setShowUserMenu(false)}
+                        >
+                          <User className="w-4 h-4" />
+                          <span>Profile</span>
+                        </Link>
+                        <button
+                          onClick={() => {
+                            logout();
+                            setShowUserMenu(false);
+                          }}
+                          className="flex items-center space-x-2 w-full px-3 py-2 text-gray-300 hover:text-red-400 hover:bg-white/10 rounded-md transition-colors"
+                        >
+                          <LogOut className="w-4 h-4" />
+                          <span>Sign Out</span>
+                        </button>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
 
               {/* Mobile Menu Button */}
               <button
