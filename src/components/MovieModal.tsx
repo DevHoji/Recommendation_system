@@ -68,12 +68,12 @@ export default function MovieModal({ movie, isOpen, onClose }: MovieModalProps) 
             {/* Hero Section */}
             <div className="relative h-96 bg-gradient-to-t from-gray-900 via-gray-900/50 to-transparent">
               <img
-                src={movie.posterUrl || '/placeholder-movie.jpg'}
+                src={movie.posterUrl || '/placeholder-hero.svg'}
                 alt={movie.title}
                 className="w-full h-full object-cover"
                 onError={(e) => {
                   const target = e.target as HTMLImageElement;
-                  target.src = '/placeholder-movie.jpg';
+                  target.src = '/placeholder-hero.svg';
                 }}
               />
               <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/50 to-transparent" />
