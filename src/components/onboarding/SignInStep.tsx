@@ -39,8 +39,8 @@ const SignInStep: React.FC<SignInStepProps> = ({ onNext }) => {
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="space-y-4"
+          transition={{ delay: 0.2, duration: 0.6 }}
+          className="space-y-4 animate-fade-in"
         >
           <div className="flex items-center justify-center space-x-2 mb-6">
             <Sparkles className="w-8 h-8 text-red-500" />
@@ -65,9 +65,10 @@ const SignInStep: React.FC<SignInStepProps> = ({ onNext }) => {
         <motion.form
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
+          transition={{ delay: 0.4, duration: 0.6 }}
           onSubmit={handleSubmit}
-          className="space-y-6 max-w-md mx-auto"
+          className="space-y-6 max-w-md mx-auto animate-fade-in"
+          style={{ animationDelay: '0.4s' }}
         >
           {/* Username Field */}
           <div className="relative">
@@ -129,8 +130,9 @@ const SignInStep: React.FC<SignInStepProps> = ({ onNext }) => {
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 0.6 }}
-          className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-2xl mx-auto mt-12"
+          transition={{ delay: 0.6, duration: 0.6 }}
+          className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-2xl mx-auto mt-12 animate-fade-in"
+          style={{ animationDelay: '0.6s' }}
         >
           {[
             { icon: '🎬', title: 'AI Recommendations', desc: 'Personalized just for you' },
