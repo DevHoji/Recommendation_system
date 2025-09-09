@@ -3,10 +3,11 @@ import { neo4jService } from '@/lib/neo4j';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { userId: string } }
+  { params }: { params: Promise<{ userId: string }> }
 ) {
   try {
-    const { userId } = params;
+    const resolvedParams = await params;
+    const { userId } = resolvedParams;
     
     // Test Neo4j connection first
     const isConnected = await neo4jService.testConnection();
@@ -216,7 +217,8 @@ export async function GET(
 
   } catch (error) {
     console.error('Recommendations API error:', error);
-    return getMockRecommendations(params.userId);
+    const resolvedParams = await params;
+    return getMockRecommendations(resolvedParams.userId);
   }
 }
 

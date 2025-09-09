@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
         usingMockData: false
       });
     } catch (dbError) {
-      console.warn('Neo4j database not available, using mock data:', dbError.message);
+      console.warn('Neo4j database not available, using mock data:', dbError instanceof Error ? dbError.message : String(dbError));
 
       // Return mock data statistics
       const mockStats = {

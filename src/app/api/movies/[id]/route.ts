@@ -3,10 +3,11 @@ import { movieService } from '@/lib/movie-service';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const movieId = parseInt(params.id);
+    const resolvedParams = await params;
+    const movieId = parseInt(resolvedParams.id);
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get('userId') ? parseInt(searchParams.get('userId')!) : undefined;
 
