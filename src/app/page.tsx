@@ -9,6 +9,7 @@ import HomePage from '@/components/HomePage';
 import MovieGrid from '@/components/MovieGrid';
 import MovieModal from '@/components/MovieModal';
 import VoiceSearch from '@/components/VoiceSearch';
+import LoadingScreen from '@/components/LoadingScreen';
 import { Movie } from '@/lib/movie-service';
 import { debounce } from '@/lib/utils';
 import toast from 'react-hot-toast';
@@ -129,14 +130,7 @@ export default function Home() {
 
   // Show loading screen while checking authentication
   if (isLoading) {
-    return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <div className="w-12 h-12 border-4 border-red-500/30 border-t-red-500 rounded-full animate-spin mx-auto" />
-          <p className="text-white text-lg">Loading CineAI...</p>
-        </div>
-      </div>
-    );
+    return <LoadingScreen message="Loading CineAI..." />;
   }
 
   // Don't render main content if user is not authenticated or onboarded

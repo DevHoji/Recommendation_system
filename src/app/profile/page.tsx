@@ -3,20 +3,25 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { User, Heart, Star, Calendar, Settings, LogOut } from 'lucide-react';
+import { useUser } from '@/contexts/UserContext';
+import { useRouter } from 'next/navigation';
 import Header from '@/components/Header';
 import MovieCard from '@/components/MovieCard';
+import LoadingScreen from '@/components/LoadingScreen';
 import { Movie } from '@/lib/movie-service';
 import toast from 'react-hot-toast';
 
 export default function ProfilePage() {
-  const [user, setUser] = useState({
-    id: 1,
-    name: 'Movie Enthusiast',
-    email: 'user@cineai.com',
+  const { user: currentUser, isAuthenticated, isLoading, logout } = useUser();
+  const router = useRouter();
+  const [profileData, setProfileData] = useState({
+    id: currentUser?.id || 1,
+    name: currentUser?.username || 'Movie Enthusiast',
+    email: currentUser?.email || 'user@cineai.com',
     joinDate: '2024-01-15',
     totalRatings: 127,
     averageRating: 4.2,
-    favoriteGenres: ['Action', 'Sci-Fi', 'Drama']
+    favoriteGenres: currentUser?.preferences?.genres || ['Action', 'Sci-Fi', 'Drama']
   });
   
   const [recentlyRated, setRecentlyRated] = useState<Movie[]>([]);
@@ -24,15 +29,22 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    loadUserData();
-  }, []);
+    if (!isLoading && (!isAuthenticated || (currentUser && !currentUser.isOnboarded))) {
+      router.push('/onboarding');
+      return;
+    }
+
+    if (isAuthenticated && currentUser) {
+      loadUserData();
+    }
+  }, [isAuthenticated, currentUser, isLoading, router]);
 
   const loadUserData = async () => {
     try {
       setLoading(true);
       
       // Load user recommendations
-      const recommendationsResponse = await fetch(`/api/recommendations/${user.id}`);
+      const recommendationsResponse = await fetch(`/api/recommendations/${profileData.id}`);
       if (recommendationsResponse.ok) {
         const recommendationsData = await recommendationsResponse.json();
         if (recommendationsData.success) {
@@ -73,9 +85,20 @@ export default function ProfilePage() {
   };
 
   const handleLogout = () => {
+    logout();
     toast.success('Logged out successfully');
-    // In a real app, you would handle logout logic here
+    router.push('/onboarding');
   };
+
+  // Show loading screen while checking authentication
+  if (isLoading) {
+    return <LoadingScreen message="Loading Profile..." />;
+  }
+
+  // Don't render main content if user is not authenticated or onboarded
+  if (!isAuthenticated || (currentUser && !currentUser.isOnboarded)) {
+    return null;
+  }
 
   if (loading) {
     return (
@@ -109,16 +132,16 @@ export default function ProfilePage() {
             </div>
             
             <div className="flex-1">
-              <h1 className="text-3xl font-bold text-white mb-2">{user.name}</h1>
-              <p className="text-gray-300 mb-4">{user.email}</p>
+              <h1 className="text-3xl font-bold text-white mb-2">{profileData.name}</h1>
+              <p className="text-gray-300 mb-4">{profileData.email}</p>
               
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-red-400">{user.totalRatings}</div>
+                  <div className="text-2xl font-bold text-red-400">{profileData.totalRatings}</div>
                   <div className="text-sm text-gray-400">Movies Rated</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-yellow-400">{user.averageRating}</div>
+                  <div className="text-2xl font-bold text-yellow-400">{profileData.averageRating}</div>
                   <div className="text-sm text-gray-400">Avg Rating</div>
                 </div>
                 <div className="text-center">
@@ -127,7 +150,7 @@ export default function ProfilePage() {
                 </div>
                 <div className="text-center">
                   <div className="text-2xl font-bold text-green-400">
-                    {new Date(user.joinDate).getFullYear()}
+                    {new Date(profileData.joinDate).getFullYear()}
                   </div>
                   <div className="text-sm text-gray-400">Member Since</div>
                 </div>
@@ -152,7 +175,7 @@ export default function ProfilePage() {
         <div className="glass-container">
           <h2 className="text-2xl font-bold text-white mb-6">Favorite Genres</h2>
           <div className="flex flex-wrap gap-3">
-            {user.favoriteGenres.map((genre) => (
+            {profileData.favoriteGenres.map((genre) => (
               <span
                 key={genre}
                 className="px-4 py-2 bg-red-500/20 text-red-400 rounded-full text-sm font-medium"

@@ -3,14 +3,19 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Heart, Play, Trash2 } from 'lucide-react';
+import { useUser } from '@/contexts/UserContext';
+import { useRouter } from 'next/navigation';
 import Header from '@/components/Header';
 import MovieCard from '@/components/MovieCard';
 import MovieModal from '@/components/MovieModal';
 import VoiceSearch from '@/components/VoiceSearch';
+import LoadingScreen from '@/components/LoadingScreen';
 import { Movie } from '@/lib/movie-service';
 import toast from 'react-hot-toast';
 
 export default function WatchlistPage() {
+  const { user, isAuthenticated, isLoading } = useUser();
+  const router = useRouter();
   const [watchlistMovies, setWatchlistMovies] = useState<Movie[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
@@ -18,8 +23,15 @@ export default function WatchlistPage() {
   const [watchlist, setWatchlist] = useState<number[]>([]);
 
   useEffect(() => {
-    loadWatchlist();
-  }, []);
+    if (!isLoading && (!isAuthenticated || (user && !user.isOnboarded))) {
+      router.push('/onboarding');
+      return;
+    }
+
+    if (isAuthenticated && user) {
+      loadWatchlist();
+    }
+  }, [isAuthenticated, user, isLoading, router]);
 
   const loadWatchlist = async () => {
     try {
@@ -79,6 +91,16 @@ export default function WatchlistPage() {
   const handleVoiceSearch = () => {
     setIsVoiceSearchOpen(true);
   };
+
+  // Show loading screen while checking authentication
+  if (isLoading) {
+    return <LoadingScreen message="Loading Watchlist..." />;
+  }
+
+  // Don't render main content if user is not authenticated or onboarded
+  if (!isAuthenticated || (user && !user.isOnboarded)) {
+    return null;
+  }
 
   if (loading) {
     return (
