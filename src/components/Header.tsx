@@ -45,7 +45,7 @@ const Header: React.FC<HeaderProps> = ({
 
   return (
     <>
-      <header className="fixed top-0 left-0 right-0 z-50 bg-black/90 backdrop-blur-md border-b border-gray-800">
+      <header className="fixed top-0 left-0 right-0 z-50 glass-strong">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
@@ -55,22 +55,24 @@ const Header: React.FC<HeaderProps> = ({
                 animate={{ opacity: 1, x: 0 }}
                 className="text-2xl font-bold text-red-600"
               >
-                CineAI
+                <a href="/" className="hover:text-red-400 transition-colors">
+                  CineAI
+                </a>
               </motion.div>
             </div>
 
             {/* Desktop Navigation */}
             <nav className="hidden md:flex items-center space-x-8">
-              <a href="#" className="text-white hover:text-red-400 transition-colors">
+              <a href="/" className="text-white hover:text-red-400 transition-colors">
                 Home
               </a>
-              <a href="#" className="text-gray-300 hover:text-white transition-colors">
+              <a href="/movies" className="text-gray-300 hover:text-white transition-colors">
                 Movies
               </a>
-              <a href="#" className="text-gray-300 hover:text-white transition-colors">
+              <a href="/tv-shows" className="text-gray-300 hover:text-white transition-colors">
                 TV Shows
               </a>
-              <a href="#" className="text-gray-300 hover:text-white transition-colors">
+              <a href="/watchlist" className="text-gray-300 hover:text-white transition-colors">
                 My List
               </a>
             </nav>

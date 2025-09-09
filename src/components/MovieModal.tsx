@@ -54,13 +54,13 @@ export default function MovieModal({ movie, isOpen, onClose }: MovieModalProps) 
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.8, opacity: 0 }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            className="relative w-full max-w-4xl max-h-[90vh] overflow-y-auto bg-gray-900 rounded-2xl shadow-2xl"
+            className="relative w-full max-w-4xl max-h-[90vh] overflow-y-auto glass-strong rounded-2xl shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Close Button */}
             <button
               onClick={onClose}
-              className="absolute top-4 right-4 z-10 p-2 bg-black/50 rounded-full hover:bg-black/70 transition-colors"
+              className="absolute top-4 right-4 z-10 p-2 glass rounded-full hover:glass-strong transition-colors"
             >
               <X className="w-6 h-6 text-white" />
             </button>
@@ -168,7 +168,7 @@ export default function MovieModal({ movie, isOpen, onClose }: MovieModalProps) 
 
                 {/* Sidebar */}
                 <div className="lg:col-span-1">
-                  <div className="bg-gray-800 rounded-lg p-6">
+                  <div className="glass rounded-lg p-6">
                     <h3 className="text-lg font-semibold text-white mb-4">Movie Details</h3>
                     
                     <div className="space-y-3">
@@ -199,7 +199,7 @@ export default function MovieModal({ movie, isOpen, onClose }: MovieModalProps) 
                   </div>
 
                   {/* Similar Movies */}
-                  <div className="mt-6 bg-gray-800 rounded-lg p-6">
+                  <div className="mt-6 glass rounded-lg p-6">
                     <h3 className="text-lg font-semibold text-white mb-4">You might also like</h3>
                     <p className="text-gray-400 text-sm">
                       Discover more {movie.genres?.[0]?.toLowerCase() || 'movies'} and similar titles 

@@ -66,7 +66,7 @@ const MovieCard: React.FC<MovieCardProps> = ({
       )}
     >
       {/* Movie Poster */}
-      <div className="relative w-full h-full rounded-lg overflow-hidden bg-gray-800">
+      <div className="relative w-full h-full glass rounded-lg overflow-hidden bg-gray-900/50">
         {!imageError && movie.posterUrl ? (
           <>
             <img
@@ -135,7 +135,7 @@ const MovieCard: React.FC<MovieCardProps> = ({
 
         {/* Rating Badge */}
         {movie.averageRating && (
-          <div className="absolute top-2 left-2 bg-black/70 backdrop-blur-sm rounded-md px-2 py-1 flex items-center space-x-1">
+          <div className="absolute top-2 left-2 glass-subtle rounded-md px-2 py-1 flex items-center space-x-1">
             <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" />
             <span className="text-white text-xs font-medium">
               {formatRating(movie.averageRating)}
@@ -144,7 +144,7 @@ const MovieCard: React.FC<MovieCardProps> = ({
         )}
 
         {/* Year Badge */}
-        <div className="absolute top-2 right-2 bg-black/70 backdrop-blur-sm rounded-md px-2 py-1">
+        <div className="absolute top-2 right-2 glass-subtle rounded-md px-2 py-1">
           <span className="text-white text-xs font-medium">{movie.year}</span>
         </div>
       </div>
@@ -155,7 +155,7 @@ const MovieCard: React.FC<MovieCardProps> = ({
         animate={{ opacity: 0, y: 10 }}
         whileHover={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
-        className="absolute -bottom-20 left-0 right-0 bg-gray-900/95 backdrop-blur-sm rounded-lg p-4 shadow-xl border border-gray-700 group-hover:opacity-100 opacity-0"
+        className="absolute -bottom-20 left-0 right-0 glass-strong rounded-lg p-4 shadow-xl group-hover:opacity-100 opacity-0"
       >
         <h3 className="text-white font-semibold text-sm mb-2 line-clamp-2">
           {movie.title}

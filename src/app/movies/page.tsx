@@ -1,10 +1,8 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Play, TrendingUp, Star, Clock, Database } from 'lucide-react';
 import Header from '@/components/Header';
-import HomePage from '@/components/HomePage';
 import MovieGrid from '@/components/MovieGrid';
 import MovieModal from '@/components/MovieModal';
 import VoiceSearch from '@/components/VoiceSearch';
@@ -12,10 +10,9 @@ import { Movie } from '@/lib/movie-service';
 import { debounce } from '@/lib/utils';
 import toast from 'react-hot-toast';
 
-export default function Home() {
-  const [currentView, setCurrentView] = useState<'home' | 'search'>('home');
+export default function MoviesPage() {
   const [movies, setMovies] = useState<Movie[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
@@ -30,6 +27,7 @@ export default function Home() {
     if (savedWatchlist) {
       setWatchlist(JSON.parse(savedWatchlist));
     }
+    loadMovies();
   }, []);
 
   // Save watchlist to localStorage
@@ -37,37 +35,45 @@ export default function Home() {
     localStorage.setItem('cineai-watchlist', JSON.stringify(watchlist));
   }, [watchlist]);
 
+  const loadMovies = async (page = 1, query = '') => {
+    try {
+      setLoading(true);
+      const params = new URLSearchParams({
+        page: page.toString(),
+        limit: '20',
+        sortBy: 'popularity',
+        sortOrder: 'desc',
+        ...(query && { search: query })
+      });
+
+      const response = await fetch(`/api/movies?${params}`);
+      const data = await response.json();
+
+      if (data.success) {
+        if (page === 1) {
+          setMovies(data.data);
+        } else {
+          setMovies(prev => [...prev, ...data.data]);
+        }
+        setHasMore(data.data.length === 20);
+        setCurrentPage(page);
+      } else {
+        throw new Error(data.message || 'Failed to load movies');
+      }
+    } catch (error) {
+      console.error('Error loading movies:', error);
+      toast.error('Failed to load movies');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSearch = useCallback(
     debounce(async (query: string) => {
-      if (!query.trim()) {
-        setCurrentView('home');
-        setMovies([]);
-        return;
-      }
-
-      setCurrentView('search');
       setIsSearching(true);
       setSearchQuery(query);
-
-      try {
-        const response = await fetch(`/api/movies?search=${encodeURIComponent(query)}&limit=20`);
-        const data = await response.json();
-
-        if (data.success) {
-          setMovies(data.data);
-          setCurrentPage(1);
-          setHasMore(data.data.length === 20);
-        } else {
-          setMovies([]);
-          toast.error('Search failed');
-        }
-      } catch (error) {
-        console.error('Search error:', error);
-        setMovies([]);
-        toast.error('Search failed');
-      } finally {
-        setIsSearching(false);
-      }
+      await loadMovies(1, query);
+      setIsSearching(false);
     }, 300),
     []
   );
@@ -84,7 +90,6 @@ export default function Home() {
 
       if (data.success) {
         if (data.data.movies && data.data.movies.length > 0) {
-          setCurrentView('search');
           setMovies(data.data.movies);
           setSearchQuery(transcript);
           toast.success(`Found ${data.data.movies.length} movies`);
@@ -116,6 +121,12 @@ export default function Home() {
     setSelectedMovie(movie);
   };
 
+  const handleLoadMore = () => {
+    if (hasMore && !loading) {
+      loadMovies(currentPage + 1, searchQuery);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-black text-white">
       <Header
@@ -125,36 +136,37 @@ export default function Home() {
         isSearching={isSearching}
       />
 
-      {currentView === 'home' ? (
-        <HomePage
-          onMovieSelect={handleMovieSelect}
-          onAddToWatchlist={handleAddToWatchlist}
-          onRemoveFromWatchlist={handleRemoveFromWatchlist}
-          watchlist={watchlist}
-        />
-      ) : (
-        <main className="main-content pt-20">
-          <div className="glass-container">
-            <h1 className="text-3xl font-bold text-white mb-8">
-              Search Results for "{searchQuery}"
+      <main className="main-content pt-20">
+        <div className="glass-container">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-8"
+          >
+            <h1 className="text-4xl font-bold text-white mb-4">
+              {searchQuery ? `Search Results for "${searchQuery}"` : 'All Movies'}
             </h1>
-            <MovieGrid
-              movies={movies}
-              loading={loading}
-              onMovieClick={handleMovieSelect}
-              onAddToWatchlist={handleAddToWatchlist}
-              onRemoveFromWatchlist={handleRemoveFromWatchlist}
-              watchlist={watchlist}
-              hasMore={hasMore}
-              onLoadMore={() => {
-                if (hasMore && !loading) {
-                  setCurrentPage(prev => prev + 1);
-                }
-              }}
-            />
-          </div>
-        </main>
-      )}
+            <p className="text-gray-300">
+              {searchQuery 
+                ? `Showing results for your search query`
+                : 'Discover thousands of movies from our collection'
+              }
+            </p>
+          </motion.div>
+
+          <MovieGrid
+            movies={movies}
+            loading={loading}
+            onMovieClick={handleMovieSelect}
+            onAddToWatchlist={handleAddToWatchlist}
+            onRemoveFromWatchlist={handleRemoveFromWatchlist}
+            watchlist={watchlist}
+            hasMore={hasMore}
+            onLoadMore={handleLoadMore}
+            showFilters={true}
+          />
+        </div>
+      </main>
 
       {/* Movie Modal */}
       <AnimatePresence>

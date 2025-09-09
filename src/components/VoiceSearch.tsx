@@ -177,7 +177,7 @@ const VoiceSearch: React.FC<VoiceSearchProps> = ({ isOpen, onClose, onResult }) 
           initial={{ scale: 0.9, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           exit={{ scale: 0.9, opacity: 0 }}
-          className="relative bg-gray-900 rounded-2xl p-8 max-w-md w-full mx-4 shadow-2xl border border-gray-700"
+          className="relative glass-strong rounded-2xl p-8 max-w-md w-full mx-4 shadow-2xl"
         >
           {/* Close Button */}
           <button
@@ -237,7 +237,7 @@ const VoiceSearch: React.FC<VoiceSearchProps> = ({ isOpen, onClose, onResult }) 
               animate={{ opacity: 1, y: 0 }}
               className="mb-6"
             >
-              <div className="bg-gray-800 rounded-lg p-4 border border-gray-600">
+              <div className="glass rounded-lg p-4">
                 <p className="text-sm text-gray-400 mb-1">You said:</p>
                 <p className="text-white">{transcript}</p>
               </div>
@@ -251,7 +251,7 @@ const VoiceSearch: React.FC<VoiceSearchProps> = ({ isOpen, onClose, onResult }) 
               animate={{ opacity: 1, y: 0 }}
               className="mb-6"
             >
-              <div className="bg-red-900/50 border border-red-700 rounded-lg p-4">
+              <div className="glass rounded-lg p-4 border border-red-500/30">
                 <p className="text-red-300 text-sm">{error}</p>
               </div>
             </motion.div>
