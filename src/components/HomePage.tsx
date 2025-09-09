@@ -422,11 +422,13 @@ function EnhancedMovieCard({
     if (movie.posterUrl) {
       return movie.posterUrl;
     }
-    // Fallback to TMDB poster if available
+    // Try different TMDB poster approaches
     if (movie.tmdbId) {
-      return `https://image.tmdb.org/t/p/w500/${movie.tmdbId}.jpg`;
+      // Use TMDB API to get poster path
+      return `https://image.tmdb.org/t/p/w500/poster_${movie.tmdbId}.jpg`;
     }
-    return null;
+    // Final fallback - use a placeholder
+    return `https://via.placeholder.com/500x750/1a1a1a/ffffff?text=${encodeURIComponent(movie.title)}`;
   };
 
   const posterUrl = getPosterUrl(movie);

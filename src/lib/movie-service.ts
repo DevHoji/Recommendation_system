@@ -125,9 +125,16 @@ class MovieService {
         const movie = record.m.properties;
         const tmdbId = await this.getTMDBId(movie.movieId);
         let posterUrl = null;
-        
+
         if (tmdbId) {
-          posterUrl = tmdbService.getPosterUrl(await this.getPosterPath(tmdbId));
+          try {
+            const posterPath = await this.getPosterPath(tmdbId);
+            posterUrl = tmdbService.getPosterUrl(posterPath);
+          } catch (error) {
+            console.log(`Failed to get poster for TMDB ID ${tmdbId}, using fallback`);
+            // Fallback: try direct TMDB poster URL
+            posterUrl = `https://image.tmdb.org/t/p/w500/poster_${tmdbId}.jpg`;
+          }
         }
 
         return {
@@ -183,9 +190,16 @@ class MovieService {
         const movie = record.m.properties;
         const tmdbId = await this.getTMDBId(movie.movieId);
         let posterUrl = null;
-        
+
         if (tmdbId) {
-          posterUrl = tmdbService.getPosterUrl(await this.getPosterPath(tmdbId));
+          try {
+            const posterPath = await this.getPosterPath(tmdbId);
+            posterUrl = tmdbService.getPosterUrl(posterPath);
+          } catch (error) {
+            console.log(`Failed to get poster for TMDB ID ${tmdbId}, using fallback`);
+            // Fallback: try direct TMDB poster URL
+            posterUrl = `https://image.tmdb.org/t/p/w500/poster_${tmdbId}.jpg`;
+          }
         }
 
         return {

@@ -10,6 +10,7 @@ import MovieGrid from '@/components/MovieGrid';
 import MovieModal from '@/components/MovieModal';
 import VoiceSearch from '@/components/VoiceSearch';
 import LoadingScreen from '@/components/LoadingScreen';
+import AIChatbot from '@/components/AIChatbot';
 import { Movie } from '@/lib/movie-service';
 import { debounce } from '@/lib/utils';
 import toast from 'react-hot-toast';
@@ -199,6 +200,9 @@ export default function Home() {
           />
         )}
       </AnimatePresence>
+
+      {/* AI Chatbot */}
+      <AIChatbot onMovieSelect={handleMovieSelect} />
     </div>
   );
 }
