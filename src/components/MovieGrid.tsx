@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, ChevronRight, Filter, SortAsc } from 'lucide-react';
 import MovieCard from './MovieCard';
+import MovieModal from './MovieModal';
 import { Movie } from '@/lib/movie-service';
 import { cn } from '@/lib/utils';
 
@@ -42,6 +43,8 @@ const MovieGrid: React.FC<MovieGridProps> = ({
   const [sortBy, setSortBy] = useState<'title' | 'year' | 'rating'>('title');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const [selectedGenre, setSelectedGenre] = useState<string>('');
+  const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const itemsPerPage = layout === 'carousel' ? 6 : 20;
   const totalPages = Math.ceil(movies.length / itemsPerPage);
@@ -90,9 +93,19 @@ const MovieGrid: React.FC<MovieGridProps> = ({
     }
   };
 
-  const currentMovies = layout === 'carousel' 
+  const currentMovies = layout === 'carousel'
     ? movies.slice(currentPage * itemsPerPage, (currentPage + 1) * itemsPerPage)
     : movies;
+
+  const handleMovieClick = (movie: Movie) => {
+    setSelectedMovie(movie);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setSelectedMovie(null);
+  };
 
   if (loading && movies.length === 0) {
     return (
@@ -227,6 +240,7 @@ const MovieGrid: React.FC<MovieGridProps> = ({
                 onPlay={onMovieSelect}
                 onAddToWatchlist={onAddToWatchlist}
                 onRemoveFromWatchlist={onRemoveFromWatchlist}
+                onMovieClick={handleMovieClick}
                 isInWatchlist={watchlist.includes(movie.movieId)}
                 size={layout === 'carousel' ? 'medium' : 'medium'}
               />
@@ -277,6 +291,13 @@ const MovieGrid: React.FC<MovieGridProps> = ({
           ))}
         </div>
       )}
+
+      {/* Movie Details Modal */}
+      <MovieModal
+        movie={selectedMovie}
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+      />
     </div>
   );
 };

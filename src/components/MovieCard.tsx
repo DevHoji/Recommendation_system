@@ -11,6 +11,7 @@ interface MovieCardProps {
   onPlay?: (movie: Movie) => void;
   onAddToWatchlist?: (movie: Movie) => void;
   onRemoveFromWatchlist?: (movie: Movie) => void;
+  onMovieClick?: (movie: Movie) => void;
   isInWatchlist?: boolean;
   className?: string;
   size?: 'small' | 'medium' | 'large';
@@ -21,6 +22,7 @@ const MovieCard: React.FC<MovieCardProps> = ({
   onPlay,
   onAddToWatchlist,
   onRemoveFromWatchlist,
+  onMovieClick,
   isInWatchlist = false,
   className,
   size = 'medium'
@@ -56,6 +58,7 @@ const MovieCard: React.FC<MovieCardProps> = ({
       animate={{ opacity: 1, y: 0 }}
       whileHover={{ scale: 1.05, zIndex: 10 }}
       transition={{ duration: 0.3 }}
+      onClick={() => onMovieClick?.(movie)}
       className={cn(
         'relative group cursor-pointer movie-card',
         sizeClasses[size],
