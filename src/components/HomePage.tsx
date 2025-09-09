@@ -29,6 +29,7 @@ export default function HomePage({
 }: HomePageProps) {
   const [featuredMovie, setFeaturedMovie] = useState<Movie | null>(null);
   const [sections, setSections] = useState<MovieSection[]>([
+    { title: 'Recommended for You', movies: [], loading: true },
     { title: 'Trending Now', movies: [], loading: true },
     { title: 'Top Rated', movies: [], loading: true },
     { title: 'Action Movies', movies: [], loading: true },
@@ -52,6 +53,7 @@ export default function HomePage({
 
       // Load different sections
       const sectionPromises = [
+        fetch('/api/recommendations/1'), // Default user ID for demo
         fetch('/api/movies?sortBy=popularity&sortOrder=desc&limit=20'),
         fetch('/api/movies?sortBy=rating&sortOrder=desc&limit=20'),
         fetch('/api/movies?genre=Action&limit=20'),

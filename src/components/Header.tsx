@@ -169,14 +169,22 @@ const Header: React.FC<HeaderProps> = ({
               </button>
 
               {/* Watchlist */}
-              <button className="p-2 text-gray-300 hover:text-red-400 transition-colors">
+              <Link
+                href="/watchlist"
+                className="p-2 text-gray-300 hover:text-red-400 transition-colors"
+                title="My Watchlist"
+              >
                 <Heart className="w-5 h-5" />
-              </button>
+              </Link>
 
               {/* User Menu */}
-              <button className="p-2 text-gray-300 hover:text-white transition-colors">
+              <Link
+                href="/profile"
+                className="p-2 text-gray-300 hover:text-white transition-colors"
+                title="User Profile"
+              >
                 <User className="w-5 h-5" />
-              </button>
+              </Link>
 
               {/* Mobile Menu Button */}
               <button

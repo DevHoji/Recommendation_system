@@ -102,18 +102,37 @@ export class DatabaseInitializer {
     // We'll read the CSV file and import data in batches
     const fs = require('fs');
     const csvPath = path.join(this.dataPath, 'movies.csv');
+    const linksPath = path.join(this.dataPath, 'links.csv');
 
     if (!fs.existsSync(csvPath)) {
       throw new Error(`Movies CSV file not found at ${csvPath}`);
     }
 
+    // Read movies CSV
     const csvContent = fs.readFileSync(csvPath, 'utf-8');
     const lines = csvContent.split('\n').slice(1); // Skip header
 
+    // Read links CSV for TMDB IDs
+    let tmdbLinks = new Map<string, string>();
+    if (fs.existsSync(linksPath)) {
+      const linksContent = fs.readFileSync(linksPath, 'utf-8');
+      const linkLines = linksContent.split('\n').slice(1);
+
+      linkLines.forEach(line => {
+        if (line.trim()) {
+          const parts = line.split(',');
+          if (parts.length >= 3 && parts[2]) {
+            tmdbLinks.set(parts[0], parts[2]); // movieId -> tmdbId
+          }
+        }
+      });
+      console.log(`Found ${tmdbLinks.size} TMDB links`);
+    }
+
     console.log(`Found ${lines.length} movies to import`);
 
-    // Import in batches of 100
-    const batchSize = 100;
+    // Import in batches of 50 (smaller batches for TMDB integration)
+    const batchSize = 50;
     for (let i = 0; i < lines.length; i += batchSize) {
       const batch = lines.slice(i, i + batchSize).filter(line => line.trim());
 
@@ -129,17 +148,25 @@ export class DatabaseInitializer {
             WHEN movie.title =~ '.*\\((\\d{4})\\)$'
             THEN toInteger(substring(movie.title, size(movie.title)-5, 4))
             ELSE null
-          END
+          END,
+          tmdbId: CASE WHEN movie.tmdbId IS NOT NULL THEN toInteger(movie.tmdbId) ELSE null END,
+          posterUrl: movie.posterUrl
         })
       `;
 
       const movies = batch.map(line => {
         const parts = this.parseCSVLine(line);
         if (parts.length >= 3) {
+          const movieId = parts[0];
+          const tmdbId = tmdbLinks.get(movieId);
+          const posterUrl = tmdbId ? `https://image.tmdb.org/t/p/w500/placeholder${movieId % 10}.jpg` : null;
+
           return {
-            movieId: parts[0],
+            movieId: movieId,
             title: parts[1],
-            genres: parts[2]
+            genres: parts[2],
+            tmdbId: tmdbId || null,
+            posterUrl: posterUrl
           };
         }
         return null;
