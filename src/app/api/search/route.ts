@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { neo4jService } from '@/lib/neo4j';
-import { allMockMovies, searchMockMovies, filterMockMovies, paginateMockMovies } from '@/lib/mock-data';
+// Removed mock data imports - using Neo4j only
 
 export async function GET(request: NextRequest) {
   try {

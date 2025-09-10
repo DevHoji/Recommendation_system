@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { movieService } from '@/lib/movie-service';
-import { allMockMovies } from '@/lib/mock-data';
 
 export async function GET(
   request: NextRequest,
@@ -19,16 +18,8 @@ export async function GET(
       }, { status: 400 });
     }
 
-    let movie;
-
-    try {
-      movie = await movieService.getMovieById(movieId, userId);
-    } catch (dbError) {
-      console.warn('Database not available, using mock data:', dbError instanceof Error ? dbError.message : String(dbError));
-
-      // Use mock data as fallback
-      movie = allMockMovies.find(m => m.movieId === movieId);
-    }
+    // Use Neo4j database only - no mock data fallback
+    const movie = await movieService.getMovieById(movieId, userId);
 
     if (!movie) {
       return NextResponse.json({
@@ -42,12 +33,13 @@ export async function GET(
       data: movie
     });
   } catch (error) {
-    console.error('Movie details API error:', error);
-    
+    console.error('Neo4j database error:', error);
+
     return NextResponse.json({
       success: false,
-      message: 'Failed to fetch movie details',
-      error: error instanceof Error ? error.message : 'Unknown error'
+      message: 'Database connection failed. Please ensure Neo4j is properly configured.',
+      error: error instanceof Error ? error.message : 'Unknown error',
+      hint: 'Check your Neo4j AuraDB credentials and ensure the database is running. Visit /api/test-neo4j to test connection.'
     }, { status: 500 });
   }
 }

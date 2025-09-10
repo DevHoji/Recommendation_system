@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { movieService } from '@/lib/movie-service';
-import { allMockMovies, searchMockMovies, filterMockMovies, paginateMockMovies } from '@/lib/mock-data';
 
 export async function GET(request: NextRequest) {
   try {
@@ -27,33 +26,13 @@ export async function GET(request: NextRequest) {
       sortOrder
     };
 
+    // Use Neo4j database only - no mock data fallback
     let result;
 
-    try {
-      // Try to use real database first
-      if (query) {
-        result = await movieService.searchMovies(query, page, limit);
-      } else {
-        result = await movieService.getMovies(page, limit, filters);
-      }
-    } catch (dbError) {
-      console.warn('Database not available, using mock data:', dbError instanceof Error ? dbError.message : String(dbError));
-
-      // Use mock data
-      let movies = allMockMovies;
-
-      if (query) {
-        movies = searchMockMovies(query, movies);
-      }
-
-      movies = filterMockMovies(movies, filters);
-      const paginatedResult = paginateMockMovies(movies, page, limit);
-
-      result = {
-        movies: paginatedResult.movies,
-        total: paginatedResult.total,
-        hasMore: paginatedResult.hasMore
-      };
+    if (query) {
+      result = await movieService.searchMovies(query, page, limit);
+    } else {
+      result = await movieService.getMovies(page, limit, filters);
     }
 
     return NextResponse.json({
@@ -68,12 +47,13 @@ export async function GET(request: NextRequest) {
       }
     });
   } catch (error) {
-    console.error('Movies API error:', error);
+    console.error('Neo4j database error:', error);
 
     return NextResponse.json({
       success: false,
-      message: 'Failed to fetch movies',
-      error: error instanceof Error ? error.message : 'Unknown error'
+      message: 'Database connection failed. Please ensure Neo4j is properly configured.',
+      error: error instanceof Error ? error.message : 'Unknown error',
+      hint: 'Check your Neo4j AuraDB credentials and ensure the database is running. Visit /api/test-neo4j to test connection.'
     }, { status: 500 });
   }
 }
