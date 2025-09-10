@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { X, Play, Plus, Check, Star, Calendar, Clock } from 'lucide-react';
 import { Movie } from '@/lib/movie-service';
 import { motion, AnimatePresence } from 'framer-motion';
+import { toNumber } from '@/lib/utils';
 
 interface MovieModalProps {
   movie: Movie | null;
@@ -17,7 +18,7 @@ export default function MovieModal({ movie, isOpen, onClose }: MovieModalProps) 
   useEffect(() => {
     if (movie) {
       const watchlist = JSON.parse(localStorage.getItem('watchlist') || '[]');
-      setIsInWatchlist(watchlist.some((item: Movie) => item.movieId === movie.movieId));
+      setIsInWatchlist(watchlist.some((item: Movie) => toNumber(item.movieId) === toNumber(movie.movieId)));
     }
   }, [movie]);
 
@@ -28,7 +29,7 @@ export default function MovieModal({ movie, isOpen, onClose }: MovieModalProps) 
     let newWatchlist;
 
     if (isInWatchlist) {
-      newWatchlist = watchlist.filter((item: Movie) => item.movieId !== movie.movieId);
+      newWatchlist = watchlist.filter((item: Movie) => toNumber(item.movieId) !== toNumber(movie.movieId));
     } else {
       newWatchlist = [...watchlist, movie];
     }
@@ -174,26 +175,26 @@ export default function MovieModal({ movie, isOpen, onClose }: MovieModalProps) 
                     <div className="space-y-3">
                       <div>
                         <span className="text-gray-400 text-sm">Release Year</span>
-                        <p className="text-white font-medium">{movie.year || 'Unknown'}</p>
+                        <p className="text-white font-medium">{toNumber(movie.year) || 'Unknown'}</p>
                       </div>
-                      
+
                       <div>
                         <span className="text-gray-400 text-sm">Rating</span>
                         <p className="text-white font-medium">
                           {movie.averageRating ? `${movie.averageRating.toFixed(1)}/5.0` : 'Not rated'}
                         </p>
                       </div>
-                      
+
                       <div>
                         <span className="text-gray-400 text-sm">Total Ratings</span>
                         <p className="text-white font-medium">
-                          {movie.ratingCount?.toLocaleString() || 'No ratings'}
+                          {toNumber(movie.ratingCount)?.toLocaleString() || 'No ratings'}
                         </p>
                       </div>
-                      
+
                       <div>
                         <span className="text-gray-400 text-sm">Movie ID</span>
-                        <p className="text-white font-medium">#{movie.movieId}</p>
+                        <p className="text-white font-medium">#{toNumber(movie.movieId)}</p>
                       </div>
                     </div>
                   </div>

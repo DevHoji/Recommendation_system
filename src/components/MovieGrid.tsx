@@ -6,7 +6,7 @@ import { ChevronLeft, ChevronRight, Filter, SortAsc } from 'lucide-react';
 import MovieCard from './MovieCard';
 import MovieModal from './MovieModal';
 import { Movie } from '@/lib/movie-service';
-import { cn } from '@/lib/utils';
+import { cn, toNumber } from '@/lib/utils';
 
 interface MovieGridProps {
   movies: Movie[];
@@ -241,7 +241,7 @@ const MovieGrid: React.FC<MovieGridProps> = ({
                 onAddToWatchlist={onAddToWatchlist}
                 onRemoveFromWatchlist={onRemoveFromWatchlist}
                 onMovieClick={handleMovieClick}
-                isInWatchlist={watchlist.includes(movie.movieId)}
+                isInWatchlist={watchlist.includes(toNumber(movie.movieId))}
                 size={layout === 'carousel' ? 'medium' : 'medium'}
               />
             ))}

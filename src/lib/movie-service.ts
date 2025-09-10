@@ -1,6 +1,7 @@
 import { neo4jService } from './neo4j';
 import { tmdbService } from './tmdb';
 import { geminiService } from './gemini';
+import { toNumber, sanitizeMovieData } from './utils';
 
 export interface Movie {
   movieId: number;
@@ -143,20 +144,22 @@ class MovieService {
           }
         }
 
-        return {
-          movieId: movie.movieId.toNumber ? movie.movieId.toNumber() : movie.movieId,
+        const movieData = {
+          movieId: toNumber(movie.movieId),
           title: movie.title,
           genres: movie.genres,
-          year: movie.year.toNumber ? movie.year.toNumber() : movie.year,
+          year: toNumber(movie.year),
           averageRating: record.avgRating ? parseFloat(record.avgRating.toFixed(1)) : undefined,
-          ratingCount: record.ratingCount ? (record.ratingCount.toNumber ? record.ratingCount.toNumber() : record.ratingCount) : 0,
+          ratingCount: toNumber(record.ratingCount),
           tmdbId: tmdbId || undefined,
           posterUrl: posterUrl || undefined
         };
+
+        return sanitizeMovieData(movieData);
       })
     );
 
-    const total = countResults[0]?.total ? (countResults[0].total.toNumber ? countResults[0].total.toNumber() : countResults[0].total) : 0;
+    const total = toNumber(countResults[0]?.total);
     const hasMore = offset + limit < total;
 
     return { movies, total, hasMore };
@@ -210,20 +213,22 @@ class MovieService {
           }
         }
 
-        return {
-          movieId: movie.movieId.toNumber ? movie.movieId.toNumber() : movie.movieId,
+        const movieData = {
+          movieId: toNumber(movie.movieId),
           title: movie.title,
           genres: movie.genres,
-          year: movie.year.toNumber ? movie.year.toNumber() : movie.year,
+          year: toNumber(movie.year),
           averageRating: record.avgRating ? parseFloat(record.avgRating.toFixed(1)) : undefined,
-          ratingCount: record.ratingCount ? (record.ratingCount.toNumber ? record.ratingCount.toNumber() : record.ratingCount) : 0,
+          ratingCount: toNumber(record.ratingCount),
           tmdbId: tmdbId || undefined,
           posterUrl: posterUrl || undefined
         };
+
+        return sanitizeMovieData(movieData);
       })
     );
 
-    const total = countResults[0]?.total ? (countResults[0].total.toNumber ? countResults[0].total.toNumber() : countResults[0].total) : 0;
+    const total = toNumber(countResults[0]?.total);
     const hasMore = offset + limit < total;
 
     return { movies, total, hasMore };
@@ -307,13 +312,13 @@ class MovieService {
         }
       }
 
-      return {
-        movieId: movie.movieId.toNumber ? movie.movieId.toNumber() : movie.movieId,
+      const movieData = {
+        movieId: toNumber(movie.movieId),
         title: movie.title,
         genres: movie.genres,
-        year: movie.year.toNumber ? movie.year.toNumber() : movie.year,
+        year: toNumber(movie.year),
         averageRating: record.avgRating ? parseFloat(record.avgRating.toFixed(1)) : undefined,
-        ratingCount: record.ratingCount ? (record.ratingCount.toNumber ? record.ratingCount.toNumber() : record.ratingCount) : 0,
+        ratingCount: toNumber(record.ratingCount),
         tmdbId: tmdbId || undefined,
         posterUrl: posterUrl || undefined,
         backdropUrl: backdropUrl || undefined,
@@ -321,9 +326,11 @@ class MovieService {
         cast,
         crew,
         videos,
-        userRating: record.userRating ? (record.userRating.toNumber ? record.userRating.toNumber() : record.userRating) : null,
+        userRating: record.userRating ? toNumber(record.userRating) : null,
         isInWatchlist: record.isInWatchlist || false
       };
+
+      return sanitizeMovieData(movieData);
     } catch (error) {
       console.error(`Error getting movie details for ${movieId}:`, error);
       throw error; // Re-throw the error so API route can handle it with mock data

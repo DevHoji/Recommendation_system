@@ -13,6 +13,42 @@ export function formatRating(rating: number): string {
   return rating.toFixed(1);
 }
 
+// Utility function to safely convert Neo4j Integer objects to JavaScript numbers
+export function toNumber(value: any): number {
+  if (value === null || value === undefined) {
+    return 0;
+  }
+
+  // Check if it's a Neo4j Integer object
+  if (value && typeof value === 'object' && 'toNumber' in value) {
+    return value.toNumber();
+  }
+
+  // Check if it's already a number
+  if (typeof value === 'number') {
+    return value;
+  }
+
+  // Try to parse as number
+  const parsed = parseFloat(value);
+  return isNaN(parsed) ? 0 : parsed;
+}
+
+// Utility function to safely convert Neo4j values in movie objects
+export function sanitizeMovieData(movie: any): any {
+  if (!movie) return movie;
+
+  return {
+    ...movie,
+    movieId: toNumber(movie.movieId),
+    year: toNumber(movie.year),
+    averageRating: movie.averageRating ? parseFloat(movie.averageRating) : undefined,
+    ratingCount: toNumber(movie.ratingCount),
+    tmdbId: movie.tmdbId ? toNumber(movie.tmdbId) : undefined,
+    popularity: movie.popularity ? parseFloat(movie.popularity) : undefined
+  };
+}
+
 export function formatGenres(genres: string[]): string {
   return genres.join(', ');
 }

@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Heart, Play, Star, Calendar, Users } from 'lucide-react';
 import { Movie } from '@/lib/movie-service';
-import { cn, formatRating, getGenreColor } from '@/lib/utils';
+import { cn, formatRating, getGenreColor, toNumber } from '@/lib/utils';
 
 interface MovieCardProps {
   movie: Movie;
@@ -190,13 +190,13 @@ const MovieCard: React.FC<MovieCardProps> = ({
             
             <div className="flex items-center space-x-1">
               <Calendar className="w-3 h-3" />
-              <span>{movie.year}</span>
+              <span>{toNumber(movie.year)}</span>
             </div>
-            
-            {movie.ratingCount && movie.ratingCount > 0 && (
+
+            {movie.ratingCount && toNumber(movie.ratingCount) > 0 && (
               <div className="flex items-center space-x-1">
                 <Users className="w-3 h-3" />
-                <span>{movie.ratingCount}</span>
+                <span>{toNumber(movie.ratingCount)}</span>
               </div>
             )}
           </div>
