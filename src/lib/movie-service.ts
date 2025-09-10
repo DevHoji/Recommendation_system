@@ -89,8 +89,8 @@ class MovieService {
       ${filters.minRating ? `WHERE avgRating >= $minRating` : ''}
       ${filters.maxRating ? `WHERE avgRating <= $maxRating` : ''}
       ${orderClause}
-      SKIP $offset
-      LIMIT $limit
+      SKIP ${Math.floor(offset)}
+      LIMIT ${Math.floor(limit)}
       RETURN m, avgRating, ratingCount
     `;
 
@@ -107,10 +107,8 @@ class MovieService {
     `;
 
     const parameters = {
-      offset,
-      limit,
       genre: filters.genre,
-      year: filters.year,
+      year: filters.year ? Math.floor(filters.year) : undefined,
       minRating: filters.minRating,
       maxRating: filters.maxRating
     };
@@ -138,19 +136,19 @@ class MovieService {
         }
 
         return {
-          movieId: movie.movieId,
+          movieId: movie.movieId.toNumber ? movie.movieId.toNumber() : movie.movieId,
           title: movie.title,
           genres: movie.genres,
-          year: movie.year,
+          year: movie.year.toNumber ? movie.year.toNumber() : movie.year,
           averageRating: record.avgRating ? parseFloat(record.avgRating.toFixed(1)) : undefined,
-          ratingCount: record.ratingCount || 0,
+          ratingCount: record.ratingCount ? (record.ratingCount.toNumber ? record.ratingCount.toNumber() : record.ratingCount) : 0,
           tmdbId: tmdbId || undefined,
           posterUrl: posterUrl || undefined
         };
       })
     );
 
-    const total = countResults[0]?.total || 0;
+    const total = countResults[0]?.total ? (countResults[0].total.toNumber ? countResults[0].total.toNumber() : countResults[0].total) : 0;
     const hasMore = offset + limit < total;
 
     return { movies, total, hasMore };
@@ -166,8 +164,8 @@ class MovieService {
       OPTIONAL MATCH (m)<-[r:RATED]-()
       WITH m, avg(r.rating) as avgRating, count(r) as ratingCount
       ORDER BY ratingCount DESC, avgRating DESC
-      SKIP $offset
-      LIMIT $limit
+      SKIP ${Math.floor(offset)}
+      LIMIT ${Math.floor(limit)}
       RETURN m, avgRating, ratingCount
     `;
 
@@ -178,7 +176,9 @@ class MovieService {
       RETURN count(m) as total
     `;
 
-    const parameters = { query, offset, limit };
+    const parameters = {
+      query
+    };
 
     const [results, countResults] = await Promise.all([
       neo4jService.runQuery(searchQuery, parameters),
@@ -203,19 +203,19 @@ class MovieService {
         }
 
         return {
-          movieId: movie.movieId,
+          movieId: movie.movieId.toNumber ? movie.movieId.toNumber() : movie.movieId,
           title: movie.title,
           genres: movie.genres,
-          year: movie.year,
+          year: movie.year.toNumber ? movie.year.toNumber() : movie.year,
           averageRating: record.avgRating ? parseFloat(record.avgRating.toFixed(1)) : undefined,
-          ratingCount: record.ratingCount || 0,
+          ratingCount: record.ratingCount ? (record.ratingCount.toNumber ? record.ratingCount.toNumber() : record.ratingCount) : 0,
           tmdbId: tmdbId || undefined,
           posterUrl: posterUrl || undefined
         };
       })
     );
 
-    const total = countResults[0]?.total || 0;
+    const total = countResults[0]?.total ? (countResults[0].total.toNumber ? countResults[0].total.toNumber() : countResults[0].total) : 0;
     const hasMore = offset + limit < total;
 
     return { movies, total, hasMore };
@@ -228,8 +228,9 @@ class MovieService {
         RETURN m.tmdbId as tmdbId
       `;
       
-      const results = await neo4jService.runQuery(query, { movieId });
-      return results[0]?.tmdbId || null;
+      const results = await neo4jService.runQuery(query, { movieId: Math.floor(movieId) });
+      const tmdbId = results[0]?.tmdbId;
+      return tmdbId ? (tmdbId.toNumber ? tmdbId.toNumber() : tmdbId) : null;
     } catch (error) {
       console.error(`Error getting TMDB ID for movie ${movieId}:`, error);
       return null;
@@ -259,7 +260,10 @@ class MovieService {
         ${userId ? `, userRating, isInWatchlist` : ''}
       `;
 
-      const results = await neo4jService.runQuery(query, { movieId, userId });
+      const results = await neo4jService.runQuery(query, {
+        movieId: Math.floor(movieId),
+        userId: userId ? Math.floor(userId) : undefined
+      });
       
       if (results.length === 0) {
         return null;
@@ -296,12 +300,12 @@ class MovieService {
       }
 
       return {
-        movieId: movie.movieId,
+        movieId: movie.movieId.toNumber ? movie.movieId.toNumber() : movie.movieId,
         title: movie.title,
         genres: movie.genres,
-        year: movie.year,
+        year: movie.year.toNumber ? movie.year.toNumber() : movie.year,
         averageRating: record.avgRating ? parseFloat(record.avgRating.toFixed(1)) : undefined,
-        ratingCount: record.ratingCount || 0,
+        ratingCount: record.ratingCount ? (record.ratingCount.toNumber ? record.ratingCount.toNumber() : record.ratingCount) : 0,
         tmdbId: tmdbId || undefined,
         posterUrl: posterUrl || undefined,
         backdropUrl: backdropUrl || undefined,
@@ -309,7 +313,7 @@ class MovieService {
         cast,
         crew,
         videos,
-        userRating: record.userRating || null,
+        userRating: record.userRating ? (record.userRating.toNumber ? record.userRating.toNumber() : record.userRating) : null,
         isInWatchlist: record.isInWatchlist || false
       };
     } catch (error) {

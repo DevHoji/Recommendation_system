@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { movieService } from '@/lib/movie-service';
+import { neo4jService } from '@/lib/neo4j';
 
 export async function GET(request: NextRequest) {
   try {
