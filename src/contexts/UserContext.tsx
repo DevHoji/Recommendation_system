@@ -45,18 +45,22 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Load user from localStorage on mount
+  // Load user from localStorage on mount (client-side only)
   useEffect(() => {
     const loadUser = () => {
       try {
-        const savedUser = localStorage.getItem('cineai-user');
-        if (savedUser) {
-          const userData = JSON.parse(savedUser);
-          setUser(userData);
+        if (typeof window !== 'undefined') {
+          const savedUser = localStorage.getItem('cineai-user');
+          if (savedUser) {
+            const userData = JSON.parse(savedUser);
+            setUser(userData);
+          }
         }
       } catch (error) {
         console.error('Error loading user from localStorage:', error);
-        localStorage.removeItem('cineai-user');
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('cineai-user');
+        }
       } finally {
         setIsLoading(false);
       }
@@ -65,12 +69,14 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
     loadUser();
   }, []);
 
-  // Save user to localStorage whenever user changes
+  // Save user to localStorage whenever user changes (client-side only)
   useEffect(() => {
-    if (user) {
-      localStorage.setItem('cineai-user', JSON.stringify(user));
-    } else {
-      localStorage.removeItem('cineai-user');
+    if (typeof window !== 'undefined') {
+      if (user) {
+        localStorage.setItem('cineai-user', JSON.stringify(user));
+      } else {
+        localStorage.removeItem('cineai-user');
+      }
     }
   }, [user]);
 

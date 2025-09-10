@@ -8,6 +8,7 @@ import MovieCard from './MovieCard';
 import Footer from './Footer';
 import LoadingShimmer, { HeroShimmer } from './LoadingShimmer';
 import { Movie } from '@/lib/movie-service';
+import { sanitizeMovieData } from '@/lib/utils';
 
 interface HomePageProps {
   onMovieSelect?: (movie: Movie) => void;
@@ -62,7 +63,7 @@ export default function HomePage({
       const featuredResponse = await fetch('/api/movies?sortBy=rating&sortOrder=desc&limit=1');
       const featuredData = await featuredResponse.json();
       if (featuredData.success && featuredData.data.length > 0) {
-        setFeaturedMovie(featuredData.data[0]);
+        setFeaturedMovie(sanitizeMovieData(featuredData.data[0]));
       }
 
       // Load different sections
@@ -81,10 +82,10 @@ export default function HomePage({
       const dataPromises = responses.map(response => response.json());
       const allData = await Promise.all(dataPromises);
 
-      setSections(prevSections => 
+      setSections(prevSections =>
         prevSections.map((section, index) => ({
           ...section,
-          movies: allData[index].success ? allData[index].data : [],
+          movies: allData[index].success ? allData[index].data.map((movie: any) => sanitizeMovieData(movie)) : [],
           loading: false
         }))
       );

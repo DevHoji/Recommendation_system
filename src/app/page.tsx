@@ -37,17 +37,26 @@ export default function Home() {
     }
   }, [isAuthenticated, user, isLoading, router]);
 
-  // Load watchlist from localStorage
+  // Load watchlist from localStorage (client-side only)
   useEffect(() => {
-    const savedWatchlist = localStorage.getItem('cineai-watchlist');
-    if (savedWatchlist) {
-      setWatchlist(JSON.parse(savedWatchlist));
+    if (typeof window !== 'undefined') {
+      const savedWatchlist = localStorage.getItem('cineai-watchlist');
+      if (savedWatchlist) {
+        try {
+          setWatchlist(JSON.parse(savedWatchlist));
+        } catch (error) {
+          console.error('Error parsing watchlist from localStorage:', error);
+          localStorage.removeItem('cineai-watchlist');
+        }
+      }
     }
   }, []);
 
-  // Save watchlist to localStorage
+  // Save watchlist to localStorage (client-side only)
   useEffect(() => {
-    localStorage.setItem('cineai-watchlist', JSON.stringify(watchlist));
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('cineai-watchlist', JSON.stringify(watchlist));
+    }
   }, [watchlist]);
 
   const handleSearch = useCallback(
