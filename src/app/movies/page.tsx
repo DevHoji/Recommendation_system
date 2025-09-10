@@ -10,6 +10,14 @@ import { Movie } from '@/lib/movie-service';
 import { debounce } from '@/lib/utils';
 import toast from 'react-hot-toast';
 
+interface MovieFilters {
+  genre?: string;
+  year?: number;
+  minRating?: number;
+  sortBy?: string;
+  sortOrder?: string;
+}
+
 export default function MoviesPage() {
   const [movies, setMovies] = useState<Movie[]>([]);
   const [loading, setLoading] = useState(true);
@@ -20,7 +28,10 @@ export default function MoviesPage() {
   const [watchlist, setWatchlist] = useState<number[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
-  const [filters, setFilters] = useState<any>({});
+  const [filters, setFilters] = useState<MovieFilters>({
+    sortBy: 'popularity',
+    sortOrder: 'desc'
+  });
 
   // Load watchlist from localStorage
   useEffect(() => {
@@ -36,7 +47,7 @@ export default function MoviesPage() {
     localStorage.setItem('cineai-watchlist', JSON.stringify(watchlist));
   }, [watchlist]);
 
-  const loadMovies = async (page = 1, query = '', currentFilters = {}) => {
+  const loadMovies = async (page = 1, query = '', currentFilters: MovieFilters = {}) => {
     try {
       setLoading(true);
       const params = new URLSearchParams({
@@ -114,7 +125,7 @@ export default function MoviesPage() {
     [filters]
   );
 
-  const handleFilterChange = async (newFilters: any) => {
+  const handleFilterChange = async (newFilters: MovieFilters) => {
     setFilters(newFilters);
     setCurrentPage(1);
 

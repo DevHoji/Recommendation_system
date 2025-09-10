@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { neo4jService } from '@/lib/neo4j';
+import { allMockMovies, searchMockMovies, filterMockMovies, paginateMockMovies } from '@/lib/mock-data';
 
 export async function GET(request: NextRequest) {
   try {
@@ -260,9 +261,7 @@ function processVoiceQuery(voiceQuery: string): any {
 }
 
 function getMockSearchResults(query: string, genre: string, page: number, limit: number) {
-  // Import the same mock data used by movies API
-  const { allMockMovies, searchMockMovies, filterMockMovies, paginateMockMovies } = require('@/lib/mock-data');
-
+  // Use the imported mock data functions
   let mockResults = allMockMovies;
 
   // Use the same filtering logic as movies API
@@ -286,7 +285,13 @@ function getMockSearchResults(query: string, genre: string, page: number, limit:
   return NextResponse.json({
     success: true,
     data: paginatedResult.movies,
-    pagination: paginatedResult.pagination,
+    pagination: {
+      page: paginatedResult.page,
+      limit: paginatedResult.limit,
+      total: paginatedResult.total,
+      hasMore: paginatedResult.hasMore,
+      totalPages: paginatedResult.totalPages
+    },
     searchParams: { query, genre },
     note: "Using mock data - Neo4j not available"
   });
