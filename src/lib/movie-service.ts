@@ -157,7 +157,7 @@ class MovieService {
     return { movies, total, hasMore };
   }
 
-  async searchMovies(query: string, page: number = 1, limit: number = 20, filters?: MovieFilters): Promise<{ movies: Movie[]; total: number; hasMore: boolean }> {
+  async searchMovies(query: string, page: number = 1, limit: number = 20, filters?: SearchFilters): Promise<{ movies: Movie[]; total: number; hasMore: boolean }> {
     const offset = (page - 1) * limit;
 
     // Build comprehensive search conditions

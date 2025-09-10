@@ -1,8 +1,13 @@
 {
-  "name": "cineai-movie-recommendation",
+  "name": "hojiai-movie-recommendation",
   "functions": {
     "app/api/**/*.ts": {
       "maxDuration": 30
+    }
+  },
+  "build": {
+    "env": {
+      "NEXT_TELEMETRY_DISABLED": "1"
     }
   },
   "headers": [
