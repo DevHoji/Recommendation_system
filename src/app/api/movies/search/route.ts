@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { neo4jService } from '@/lib/neo4j';
+import { toNumber } from '@/lib/utils';
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -45,12 +46,12 @@ export async function GET(request: NextRequest) {
     });
 
     const movies = results.map(result => ({
-      movieId: result.movieId,
+      movieId: toNumber(result.movieId),
       title: result.title,
       genres: result.genres || [],
-      year: result.year,
-      posterUrl: result.posterUrl || `https://image.tmdb.org/t/p/w500/placeholder${result.movieId % 10}.jpg`,
-      averageRating: result.averageRating || 0
+      year: toNumber(result.year),
+      posterUrl: result.posterUrl || `https://image.tmdb.org/t/p/w500/placeholder${toNumber(result.movieId) % 10}.jpg`,
+      averageRating: result.averageRating ? parseFloat(result.averageRating) : 0
     }));
 
     return NextResponse.json({

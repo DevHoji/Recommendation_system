@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { neo4jService } from '@/lib/neo4j';
+import { toNumber } from '@/lib/utils';
 
 export async function POST(request: NextRequest) {
   try {
@@ -142,7 +143,7 @@ export async function GET(request: NextRequest) {
 
     const userData = result[0];
     const user = {
-      id: userData.u.id,
+      id: toNumber(userData.u.id),
       username: userData.u.username,
       email: userData.u.email,
       joinDate: userData.u.joinDate,
@@ -150,7 +151,7 @@ export async function GET(request: NextRequest) {
       preferences: {
         genres: userData.genres.filter((g: any) => g),
         moods: userData.moods.filter((m: any) => m),
-        favoriteMovies: userData.favoriteMovies.filter((id: any) => id)
+        favoriteMovies: userData.favoriteMovies.filter((id: any) => id).map((id: any) => toNumber(id))
       }
     };
 

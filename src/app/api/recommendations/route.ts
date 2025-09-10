@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { neo4jService } from '@/lib/neo4j';
+import { toNumber } from '@/lib/utils';
 
 export async function GET(request: NextRequest) {
   try {
@@ -265,7 +266,18 @@ export async function POST(request: NextRequest) {
       limit
     };
 
-    const recommendations = await neo4jService.runQuery(query, parameters);
+    const rawRecommendations = await neo4jService.runQuery(query, parameters);
+
+    // Sanitize Neo4j Integer objects
+    const recommendations = rawRecommendations.map(movie => ({
+      movieId: toNumber(movie.movieId),
+      title: movie.title,
+      genres: movie.genres || [],
+      year: toNumber(movie.year),
+      averageRating: movie.averageRating ? parseFloat(movie.averageRating) : undefined,
+      overview: movie.overview,
+      recommendationScore: movie.recommendationScore ? parseFloat(movie.recommendationScore) : undefined
+    }));
 
     return NextResponse.json({
       success: true,

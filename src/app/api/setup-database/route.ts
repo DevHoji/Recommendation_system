@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { neo4jService } from '@/lib/neo4j';
+import { toNumber } from '@/lib/utils';
 
 export async function POST(request: NextRequest) {
   try {
@@ -182,12 +183,18 @@ export async function GET(request: NextRequest) {
       RETURN labels(n)[0] as nodeType, count(n) as count
     `);
 
+    // Sanitize count data to convert Neo4j Integer objects
+    const sanitizedCounts = counts.map(record => ({
+      nodeType: record.nodeType,
+      count: toNumber(record.count)
+    }));
+
     return NextResponse.json({
       success: true,
       message: 'Database connection successful',
       data: {
         labels: stats[0]?.labels || [],
-        nodeCounts: counts
+        nodeCounts: sanitizedCounts
       }
     });
 

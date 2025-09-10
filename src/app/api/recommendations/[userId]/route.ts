@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { neo4jService } from '@/lib/neo4j';
+import { toNumber } from '@/lib/utils';
 
 export async function GET(
   request: NextRequest,
@@ -202,9 +203,16 @@ export async function GET(
       }
     }
 
-    // Add recommendation reasons
+    // Sanitize and add recommendation reasons
     const finalRecommendations = recommendations.map(movie => ({
-      ...movie,
+      movieId: toNumber(movie.movieId),
+      title: movie.title,
+      genres: movie.genres || [],
+      year: toNumber(movie.year),
+      averageRating: movie.averageRating ? parseFloat(movie.averageRating) : undefined,
+      posterUrl: movie.posterUrl,
+      score: movie.score ? parseFloat(movie.score) : undefined,
+      similarity: movie.similarity ? toNumber(movie.similarity) : undefined,
       reason: getRecommendationReason(movie, favoriteGenres, userRatings)
     }));
 
