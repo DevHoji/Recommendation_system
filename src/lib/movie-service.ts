@@ -81,13 +81,22 @@ class MovieService {
       }
     }
 
+    // Build rating filter conditions for after WITH clause
+    const ratingConditions = [];
+    if (filters.minRating) {
+      ratingConditions.push(`avgRating >= $minRating`);
+    }
+    if (filters.maxRating) {
+      ratingConditions.push(`avgRating <= $maxRating`);
+    }
+    const ratingWhereClause = ratingConditions.length > 0 ? `WHERE ${ratingConditions.join(' AND ')}` : '';
+
     const query = `
       MATCH (m:Movie)
       ${whereClause}
       OPTIONAL MATCH (m)<-[r:RATED]-()
       WITH m, avg(r.rating) as avgRating, count(r) as ratingCount
-      ${filters.minRating ? `WHERE avgRating >= $minRating` : ''}
-      ${filters.maxRating ? `WHERE avgRating <= $maxRating` : ''}
+      ${ratingWhereClause}
       ${orderClause}
       SKIP ${Math.floor(offset)}
       LIMIT ${Math.floor(limit)}
@@ -100,8 +109,7 @@ class MovieService {
       ${filters.minRating || filters.maxRating ? `
         OPTIONAL MATCH (m)<-[r:RATED]-()
         WITH m, avg(r.rating) as avgRating
-        ${filters.minRating ? `WHERE avgRating >= $minRating` : ''}
-        ${filters.maxRating ? `WHERE avgRating <= $maxRating` : ''}
+        ${ratingWhereClause}
       ` : ''}
       RETURN count(m) as total
     `;
