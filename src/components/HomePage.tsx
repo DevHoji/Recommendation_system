@@ -106,7 +106,6 @@ export default function HomePage({
       }
 
       // Load different sections
-      const userId = user?.id || 1; // Use actual user ID or fallback to 1
       const sectionPromises = [
         fetch(`/api/recommendations/${userId}`),
         fetch('/api/movies?sortBy=popularity&sortOrder=desc&limit=20'),
