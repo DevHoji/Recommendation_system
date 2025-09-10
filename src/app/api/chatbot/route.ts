@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { geminiService } from '@/lib/gemini';
 import { movieService } from '@/lib/movie-service';
+import neo4jService from '@/lib/neo4j';
 
 export async function POST(request: NextRequest) {
   try {
@@ -50,8 +51,14 @@ Respond in a friendly, knowledgeable tone as a movie expert.
 
     if (searchParams.hasSearchCriteria) {
       try {
+        // Use Neo4j-powered movie search
         const searchResults = await movieService.getMovies(1, 10, searchParams);
         movies = searchResults.movies || [];
+
+        // If no results from main search, try alternative queries
+        if (movies.length === 0) {
+          movies = await getAlternativeMovies(searchParams);
+        }
       } catch (dbError) {
         console.log('Database search failed, using mock data');
         // Provide some mock movie data as fallback
@@ -59,11 +66,11 @@ Respond in a friendly, knowledgeable tone as a movie expert.
       }
     }
 
-    // Enhance response with movie results
+    // Enhance response with movie results using the new enhanced function
     if (movies.length > 0) {
-      aiResponse += `\n\n🎬 I found ${movies.length} great movies for you! Here are the top recommendations:`;
+      aiResponse = generateEnhancedResponse(message, searchParams, movies.length);
     } else if (searchParams.hasSearchCriteria) {
-      aiResponse += '\n\n🔍 I couldn\'t find movies matching those exact criteria. Try asking for different genres or years!';
+      aiResponse += '\n\n🔍 I couldn\'t find movies matching those exact criteria. Try asking for different genres, years, or more general recommendations!';
     }
 
     return NextResponse.json({
@@ -217,4 +224,92 @@ function getMockMovies(searchParams: any): any[] {
   }
 
   return filteredMovies;
+}
+
+// Alternative movie search using direct Neo4j queries
+async function getAlternativeMovies(searchParams: any): Promise<any[]> {
+  try {
+    let query = '';
+    let params: any = {};
+
+    if (searchParams.genre) {
+      query = `
+        MATCH (m:Movie)-[:HAS_GENRE]->(g:Genre {name: $genre})
+        OPTIONAL MATCH (m)<-[r:RATED]-()
+        WITH m, avg(r.rating) as avgRating, count(r) as ratingCount
+        WHERE avgRating >= 3.0
+        RETURN m.movieId as movieId, m.title as title, m.genres as genres,
+               m.year as year, avgRating, ratingCount, m.tmdbId as tmdbId
+        ORDER BY avgRating DESC, ratingCount DESC
+        LIMIT 10
+      `;
+      params.genre = searchParams.genre;
+    } else if (searchParams.year) {
+      query = `
+        MATCH (m:Movie)
+        WHERE m.year = $year
+        OPTIONAL MATCH (m)<-[r:RATED]-()
+        WITH m, avg(r.rating) as avgRating, count(r) as ratingCount
+        WHERE avgRating >= 3.0
+        RETURN m.movieId as movieId, m.title as title, m.genres as genres,
+               m.year as year, avgRating, ratingCount, m.tmdbId as tmdbId
+        ORDER BY avgRating DESC, ratingCount DESC
+        LIMIT 10
+      `;
+      params.year = searchParams.year;
+    } else {
+      // Default: get highly rated movies
+      query = `
+        MATCH (m:Movie)<-[r:RATED]-()
+        WITH m, avg(r.rating) as avgRating, count(r) as ratingCount
+        WHERE avgRating >= 4.0 AND ratingCount >= 10
+        RETURN m.movieId as movieId, m.title as title, m.genres as genres,
+               m.year as year, avgRating, ratingCount, m.tmdbId as tmdbId
+        ORDER BY avgRating DESC, ratingCount DESC
+        LIMIT 10
+      `;
+    }
+
+    const results = await neo4jService.runQuery(query, params);
+    return results.map((record: any) => ({
+      movieId: record.movieId,
+      title: record.title,
+      genres: record.genres,
+      year: record.year,
+      averageRating: record.avgRating ? parseFloat(record.avgRating.toFixed(1)) : undefined,
+      ratingCount: record.ratingCount,
+      tmdbId: record.tmdbId,
+      posterUrl: record.tmdbId ? `https://image.tmdb.org/t/p/w500/placeholder${record.movieId % 10}.jpg` : null
+    }));
+  } catch (error) {
+    console.error('Alternative movie search failed:', error);
+    return [];
+  }
+}
+
+// Enhanced fallback response generation
+function generateEnhancedResponse(message: string, searchParams: any, movieCount: number): string {
+  const lowerMessage = message.toLowerCase();
+
+  if (lowerMessage.includes('like') && lowerMessage.includes('inception')) {
+    return `🧠 Inception is a masterpiece! I've found ${movieCount} mind-bending sci-fi thrillers that share its complex storytelling and stunning visuals. These movies will challenge your perception of reality just like Inception did.`;
+  } else if (lowerMessage.includes('like') && lowerMessage.includes('dark knight')) {
+    return `🦇 The Dark Knight is legendary! I've discovered ${movieCount} superhero and crime dramas with the same dark, gritty tone and exceptional storytelling that made Nolan's Batman trilogy so compelling.`;
+  } else if (searchParams.genre === 'Action') {
+    return `💥 Action movies are pure adrenaline! I've found ${movieCount} high-octane action films from our Neo4j database that will keep you on the edge of your seat with spectacular stunts and heart-pounding sequences.`;
+  } else if (searchParams.genre === 'Comedy') {
+    return `😂 Time for some laughs! I've curated ${movieCount} hilarious comedies that will brighten your day. These films have been rated highly by our community for their wit and humor.`;
+  } else if (searchParams.genre === 'Horror') {
+    return `👻 Ready for some scares? I've found ${movieCount} spine-chilling horror movies that will keep you up at night. These films are highly rated for their ability to terrify and thrill.`;
+  } else if (searchParams.genre === 'Sci-Fi') {
+    return `🚀 Explore the future! I've discovered ${movieCount} mind-expanding sci-fi films that will take you to other worlds and challenge your imagination with cutting-edge concepts.`;
+  } else if (searchParams.year) {
+    return `📅 ${searchParams.year} was an amazing year for cinema! I've found ${movieCount} standout films from that year that defined the era and left lasting impacts on movie history.`;
+  } else if (lowerMessage.includes('recommend') || lowerMessage.includes('suggest')) {
+    return `🎬 Based on our Neo4j-powered recommendation engine, I've found ${movieCount} exceptional films tailored just for you! These movies have been selected based on ratings, popularity, and user preferences.`;
+  } else if (lowerMessage.includes('best') || lowerMessage.includes('top')) {
+    return `⭐ Here are ${movieCount} of the highest-rated films in our database! These movies have consistently impressed audiences and critics alike with their outstanding quality.`;
+  } else {
+    return `🤖 I've analyzed our movie database and found ${movieCount} great films for you! Each recommendation is powered by our Neo4j graph database that understands the complex relationships between movies, genres, and user preferences.`;
+  }
 }

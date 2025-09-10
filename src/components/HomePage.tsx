@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Play, Plus, Info, Star, ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { Play, Plus, Info, Star, ChevronLeft, ChevronRight, X, Sparkles } from 'lucide-react';
 import { useUser } from '@/contexts/UserContext';
 import MovieCard from './MovieCard';
 import Footer from './Footer';
@@ -37,7 +37,8 @@ export default function HomePage({
   watchlist = []
 }: HomePageProps) {
   const { user } = useUser();
-  const [featuredMovie, setFeaturedMovie] = useState<Movie | null>(null);
+  const [featuredMovies, setFeaturedMovies] = useState<Movie[]>([]);
+  const [currentFeaturedIndex, setCurrentFeaturedIndex] = useState(0);
   const [sections, setSections] = useState<MovieSection[]>([
     { title: `Recommended for ${user?.username || 'You'}`, movies: [], loading: true },
     { title: 'Trending Now', movies: [], loading: true },
@@ -57,13 +58,51 @@ export default function HomePage({
     loadHomepageData();
   }, []);
 
+  // Auto-rotate featured movies every 8 seconds
+  useEffect(() => {
+    if (featuredMovies.length > 1) {
+      const interval = setInterval(() => {
+        setCurrentFeaturedIndex((prevIndex) =>
+          (prevIndex + 1) % featuredMovies.length
+        );
+      }, 8000); // Change every 8 seconds
+
+      return () => clearInterval(interval);
+    }
+  }, [featuredMovies.length]);
+
   const loadHomepageData = async () => {
     try {
-      // Load featured movie (top rated)
-      const featuredResponse = await fetch('/api/movies?sortBy=rating&sortOrder=desc&limit=1');
-      const featuredData = await featuredResponse.json();
-      if (featuredData.success && featuredData.data.length > 0) {
-        setFeaturedMovie(sanitizeMovieData(featuredData.data[0]));
+      // Load featured movies (personalized recommendations + top rated)
+      const userId = user?.id || 1;
+      const featuredPromises = [
+        fetch(`/api/recommendations/${userId}?limit=3`), // Get personalized recommendations
+        fetch('/api/movies?sortBy=rating&sortOrder=desc&limit=3'), // Get top rated as fallback
+      ];
+
+      const [recommendedResponse, topRatedResponse] = await Promise.all(featuredPromises);
+      const recommendedData = await recommendedResponse.json();
+      const topRatedData = await topRatedResponse.json();
+
+      let featuredMoviesList: Movie[] = [];
+
+      // Use personalized recommendations if available
+      if (recommendedData.success && recommendedData.data && recommendedData.data.length > 0) {
+        featuredMoviesList = recommendedData.data.slice(0, 3).map((movie: any) => sanitizeMovieData(movie));
+      }
+
+      // Fill with top-rated movies if we don't have enough recommendations
+      if (featuredMoviesList.length < 3 && topRatedData.success && topRatedData.data) {
+        const additionalMovies = topRatedData.data
+          .filter((movie: any) => !featuredMoviesList.some(fm => fm.movieId === movie.movieId))
+          .slice(0, 3 - featuredMoviesList.length)
+          .map((movie: any) => sanitizeMovieData(movie));
+        featuredMoviesList = [...featuredMoviesList, ...additionalMovies];
+      }
+
+      if (featuredMoviesList.length > 0) {
+        setFeaturedMovies(featuredMoviesList);
+        setCurrentFeaturedIndex(0);
       }
 
       // Load different sections
@@ -146,96 +185,134 @@ export default function HomePage({
   return (
     <div className="min-h-screen bg-black">
       {/* Hero Section */}
-      {featuredMovie ? (
+      {featuredMovies.length > 0 ? (
         <section className="relative h-screen flex items-center justify-center overflow-hidden">
-          {/* Background Image */}
-          <div className="absolute inset-0">
-            <img
-              src={featuredMovie.posterUrl || '/placeholder-hero.svg'}
-              alt={featuredMovie.title}
-              className="w-full h-full object-cover"
-              onError={(e) => {
-                const target = e.target as HTMLImageElement;
-                target.src = '/placeholder-hero.svg';
-              }}
-            />
-            <div className="absolute inset-0 bg-gradient-to-r from-black via-black/70 to-transparent" />
-            <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent" />
-          </div>
+          {/* Background Image with Transition */}
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={currentFeaturedIndex}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 1 }}
+              className="absolute inset-0"
+            >
+              <img
+                src={featuredMovies[currentFeaturedIndex]?.posterUrl || '/placeholder-hero.svg'}
+                alt={featuredMovies[currentFeaturedIndex]?.title}
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  target.src = '/placeholder-hero.svg';
+                }}
+              />
+              <div className="absolute inset-0 bg-gradient-to-r from-black via-black/70 to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent" />
+            </motion.div>
+          </AnimatePresence>
 
           {/* Hero Content */}
           <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="max-w-2xl">
-              <motion.div
-                initial={{ opacity: 0, y: 30 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8 }}
-              >
-                <h1 className="text-5xl md:text-7xl font-bold text-white mb-6">
-                  {featuredMovie.title}
-                </h1>
-                
-                <div className="flex items-center space-x-4 mb-6">
-                  {featuredMovie.averageRating && (
-                    <div className="flex items-center space-x-1">
-                      <Star className="w-5 h-5 text-yellow-400 fill-yellow-400" />
-                      <span className="text-white font-semibold">
-                        {featuredMovie.averageRating.toFixed(1)}
-                      </span>
-                    </div>
-                  )}
-                  <span className="text-gray-300">{featuredMovie.year}</span>
-                  {featuredMovie.genres && (
-                    <div className="flex space-x-2">
-                      {featuredMovie.genres.slice(0, 3).map((genre, index) => (
-                        <span key={index} className="text-gray-300 text-sm">
-                          {genre}
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={`content-${currentFeaturedIndex}`}
+                  initial={{ opacity: 0, y: 30 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -30 }}
+                  transition={{ duration: 0.8 }}
+                >
+                  {/* Recommendation Badge */}
+                  <div className="mb-4">
+                    <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-purple-600/20 text-purple-300 border border-purple-500/30">
+                      <Sparkles className="w-4 h-4 mr-2" />
+                      {currentFeaturedIndex === 0 ? 'Recommended for You' : 'Top Rated'}
+                    </span>
+                  </div>
+
+                  <h1 className="text-5xl md:text-7xl font-bold text-white mb-6">
+                    {featuredMovies[currentFeaturedIndex]?.title}
+                  </h1>
+
+                  <div className="flex items-center space-x-4 mb-6">
+                    {featuredMovies[currentFeaturedIndex]?.averageRating && (
+                      <div className="flex items-center space-x-1">
+                        <Star className="w-5 h-5 text-yellow-400 fill-yellow-400" />
+                        <span className="text-white font-semibold">
+                          {featuredMovies[currentFeaturedIndex].averageRating.toFixed(1)}
                         </span>
+                      </div>
+                    )}
+                    <span className="text-gray-300">{featuredMovies[currentFeaturedIndex]?.year}</span>
+                    {featuredMovies[currentFeaturedIndex]?.genres && (
+                      <div className="flex space-x-2">
+                        {featuredMovies[currentFeaturedIndex].genres.slice(0, 3).map((genre, index) => (
+                          <span key={index} className="text-gray-300 text-sm">
+                            {genre}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  <p className="text-xl text-gray-300 mb-8 leading-relaxed max-w-2xl">
+                    {featuredMovies[currentFeaturedIndex]?.genres && featuredMovies[currentFeaturedIndex].genres.length > 0
+                      ? `An incredible ${featuredMovies[currentFeaturedIndex].genres[0].toLowerCase()} experience that has captivated audiences worldwide.`
+                      : 'A remarkable cinematic experience that has captivated audiences worldwide.'
+                    } Join {featuredMovies[currentFeaturedIndex]?.ratingCount?.toLocaleString() || 'thousands of'} viewers who have rated this movie {featuredMovies[currentFeaturedIndex]?.averageRating?.toFixed(1) || 'highly'}.
+                  </p>
+
+                  <div className="flex space-x-4">
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => handleWatchTrailer(featuredMovies[currentFeaturedIndex])}
+                      disabled={loadingTrailer}
+                      className="flex items-center space-x-2 bg-white text-black px-8 py-4 rounded-lg font-semibold hover:bg-gray-200 transition-colors disabled:opacity-50"
+                    >
+                      <Play className="w-5 h-5" />
+                      <span>{loadingTrailer ? 'Loading...' : 'Watch Trailer'}</span>
+                    </motion.button>
+
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => handleWatchlistToggle(featuredMovies[currentFeaturedIndex])}
+                      className="flex items-center space-x-2 glass px-8 py-4 rounded-lg font-semibold text-white hover:glass-strong transition-all"
+                    >
+                      <Plus className="w-5 h-5" />
+                      <span>My List</span>
+                    </motion.button>
+
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => onMovieSelect?.(featuredMovies[currentFeaturedIndex])}
+                      className="flex items-center space-x-2 glass px-8 py-4 rounded-lg font-semibold text-white hover:glass-strong transition-all"
+                    >
+                      <Info className="w-5 h-5" />
+                      <span>More Info</span>
+                    </motion.button>
+                  </div>
+
+                  {/* Movie Navigation Dots */}
+                  {featuredMovies.length > 1 && (
+                    <div className="flex space-x-2 mt-8">
+                      {featuredMovies.map((_, index) => (
+                        <button
+                          key={index}
+                          onClick={() => setCurrentFeaturedIndex(index)}
+                          className={`w-3 h-3 rounded-full transition-all ${
+                            index === currentFeaturedIndex
+                              ? 'bg-white'
+                              : 'bg-white/30 hover:bg-white/50'
+                          }`}
+                        />
                       ))}
                     </div>
                   )}
-                </div>
-
-                <p className="text-xl text-gray-300 mb-8 leading-relaxed max-w-2xl">
-                  {featuredMovie.genres && featuredMovie.genres.length > 0
-                    ? `An incredible ${featuredMovie.genres[0].toLowerCase()} experience that has captivated audiences worldwide.`
-                    : 'A remarkable cinematic experience that has captivated audiences worldwide.'
-                  } Join {featuredMovie.ratingCount?.toLocaleString() || 'thousands of'} viewers who have rated this movie {featuredMovie.averageRating?.toFixed(1) || 'highly'}.
-                </p>
-
-                <div className="flex space-x-4">
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => handleWatchTrailer(featuredMovie)}
-                    disabled={loadingTrailer}
-                    className="flex items-center space-x-2 bg-white text-black px-8 py-4 rounded-lg font-semibold hover:bg-gray-200 transition-colors disabled:opacity-50"
-                  >
-                    <Play className="w-5 h-5" />
-                    <span>{loadingTrailer ? 'Loading...' : 'Watch Trailer'}</span>
-                  </motion.button>
-
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => handleWatchlistToggle(featuredMovie)}
-                    className="flex items-center space-x-2 glass px-8 py-4 rounded-lg font-semibold text-white hover:glass-strong transition-all"
-                  >
-                    <Plus className="w-5 h-5" />
-                    <span>My List</span>
-                  </motion.button>
-
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => onMovieSelect?.(featuredMovie)}
-                    className="flex items-center space-x-2 glass px-8 py-4 rounded-lg font-semibold text-white hover:glass-strong transition-all"
-                  >
-                    <Info className="w-5 h-5" />
-                    <span>More Info</span>
-                  </motion.button>
-                </div>
-              </motion.div>
+                </motion.div>
+              </AnimatePresence>
             </div>
           </div>
         </section>
