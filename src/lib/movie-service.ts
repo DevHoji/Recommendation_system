@@ -157,16 +157,61 @@ class MovieService {
     return { movies, total, hasMore };
   }
 
-  async searchMovies(query: string, page: number = 1, limit: number = 20): Promise<{ movies: Movie[]; total: number; hasMore: boolean }> {
+  async searchMovies(query: string, page: number = 1, limit: number = 20, filters?: MovieFilters): Promise<{ movies: Movie[]; total: number; hasMore: boolean }> {
     const offset = (page - 1) * limit;
-    
+
+    // Build comprehensive search conditions
+    let whereConditions = [];
+    let parameters: any = { query };
+
+    // Text search - title, genres, or year
+    if (query) {
+      const searchConditions = [
+        'toLower(m.title) CONTAINS toLower($query)',
+        'ANY(genre IN m.genres WHERE toLower(genre) CONTAINS toLower($query))',
+        'toString(m.year) CONTAINS $query'
+      ];
+      whereConditions.push(`(${searchConditions.join(' OR ')})`);
+    }
+
+    // Genre filter
+    if (filters?.genre) {
+      whereConditions.push('$genre IN m.genres');
+      parameters.genre = filters.genre;
+    }
+
+    // Year filter
+    if (filters?.year) {
+      whereConditions.push('m.year = $year');
+      parameters.year = filters.year;
+    }
+
+    // Rating filters
+    if (filters?.minRating !== undefined || filters?.maxRating !== undefined) {
+      whereConditions.push('EXISTS((m)<-[:RATED]-())');
+    }
+
+    const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : '';
+
+    let ratingFilter = '';
+    if (filters?.minRating !== undefined) {
+      ratingFilter += ' AND avgRating >= $minRating';
+      parameters.minRating = filters.minRating;
+    }
+    if (filters?.maxRating !== undefined) {
+      ratingFilter += ' AND avgRating <= $maxRating';
+      parameters.maxRating = filters.maxRating;
+    }
+
     const searchQuery = `
       MATCH (m:Movie)
-      WHERE toLower(m.title) CONTAINS toLower($query)
-         OR ANY(genre IN m.genres WHERE toLower(genre) CONTAINS toLower($query))
+      ${whereClause}
       OPTIONAL MATCH (m)<-[r:RATED]-()
       WITH m, avg(r.rating) as avgRating, count(r) as ratingCount
-      ORDER BY ratingCount DESC, avgRating DESC
+      ${ratingFilter ? `WHERE 1=1 ${ratingFilter}` : ''}
+      ORDER BY
+        CASE WHEN toLower(m.title) STARTS WITH toLower($query) THEN 1 ELSE 2 END,
+        ratingCount DESC, avgRating DESC
       SKIP ${Math.floor(offset)}
       LIMIT ${Math.floor(limit)}
       RETURN m, avgRating, ratingCount
@@ -174,14 +219,12 @@ class MovieService {
 
     const countQuery = `
       MATCH (m:Movie)
-      WHERE toLower(m.title) CONTAINS toLower($query)
-         OR ANY(genre IN m.genres WHERE toLower(genre) CONTAINS toLower($query))
+      ${whereClause}
+      OPTIONAL MATCH (m)<-[r:RATED]-()
+      WITH m, avg(r.rating) as avgRating, count(r) as ratingCount
+      ${ratingFilter ? `WHERE 1=1 ${ratingFilter}` : ''}
       RETURN count(m) as total
     `;
-
-    const parameters = {
-      query
-    };
 
     const [results, countResults] = await Promise.all([
       neo4jService.runQuery(searchQuery, parameters),

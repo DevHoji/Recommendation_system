@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { neo4jService } from '@/lib/neo4j';
+import { toNumber } from '@/lib/utils';
 // Removed mock data imports - using Neo4j only
 
 export async function GET(request: NextRequest) {
@@ -87,12 +88,23 @@ export async function GET(request: NextRequest) {
 
     // Add pagination
     const offset = (page - 1) * limit;
-    cypherQuery += ` SKIP $offset LIMIT $limit`;
-    parameters.offset = offset;
-    parameters.limit = limit;
+    cypherQuery += ` SKIP ${Math.floor(offset)} LIMIT ${Math.floor(limit)}`;
+    // Don't add offset and limit as parameters since we're using direct values
 
     // Execute search query
     const searchResults = await neo4jService.runQuery(cypherQuery, parameters);
+
+    // Sanitize search results to convert Neo4j Integer objects
+    const sanitizedResults = searchResults.map((record: any) => ({
+      movieId: toNumber(record.movieId),
+      title: record.title,
+      genres: record.genres,
+      year: toNumber(record.year),
+      averageRating: record.averageRating ? parseFloat(record.averageRating.toFixed(1)) : undefined,
+      ratingCount: toNumber(record.ratingCount),
+      posterUrl: record.posterUrl,
+      tmdbId: toNumber(record.tmdbId)
+    }));
 
     // Get total count for pagination
     let countQuery = 'MATCH (m:Movie) WHERE 1=1';
@@ -122,16 +134,16 @@ export async function GET(request: NextRequest) {
 
     countQuery += ' RETURN count(m) as total';
     const countResult = await neo4jService.runQuery(countQuery, countParams);
-    const total = countResult[0]?.total || 0;
+    const total = toNumber(countResult[0]?.total) || 0;
 
     return NextResponse.json({
       success: true,
-      data: searchResults,
+      data: sanitizedResults,
       pagination: {
         page,
         limit,
         total,
-        hasMore: offset + searchResults.length < total,
+        hasMore: offset + sanitizedResults.length < total,
         totalPages: Math.ceil(total / limit)
       },
       searchParams: {

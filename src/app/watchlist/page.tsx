@@ -34,33 +34,49 @@ export default function WatchlistPage() {
   }, [isAuthenticated, user, isLoading, router]);
 
   const loadWatchlist = async () => {
+    if (!user) return;
+
     try {
       setLoading(true);
-      const savedWatchlist = localStorage.getItem('cineai-watchlist');
-      const watchlistIds = savedWatchlist ? JSON.parse(savedWatchlist) : [];
-      setWatchlist(watchlistIds);
 
-      if (watchlistIds.length === 0) {
-        setWatchlistMovies([]);
-        setLoading(false);
-        return;
-      }
-
-      // Fetch movies from watchlist
-      const moviePromises = watchlistIds.map(async (id: number) => {
-        try {
-          const response = await fetch(`/api/movies/${id}`);
-          const data = await response.json();
-          return data.success ? data.data : null;
-        } catch (error) {
-          console.error(`Error fetching movie ${id}:`, error);
-          return null;
+      // Load watchlist from Neo4j API
+      const response = await fetch(`/api/users/watchlist?userId=${user.id}`);
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.watchlist) {
+          setWatchlistMovies(data.watchlist);
+          setWatchlist(data.watchlist.map((movie: Movie) => movie.movieId));
+        } else {
+          setWatchlistMovies([]);
+          setWatchlist([]);
         }
-      });
+      } else {
+        // Fallback to localStorage if API fails
+        console.log('Neo4j API failed, falling back to localStorage');
+        const savedWatchlist = localStorage.getItem('hojiai-watchlist');
+        const watchlistIds = savedWatchlist ? JSON.parse(savedWatchlist) : [];
+        setWatchlist(watchlistIds);
 
-      const movies = await Promise.all(moviePromises);
-      const validMovies = movies.filter(movie => movie !== null);
-      setWatchlistMovies(validMovies);
+        if (watchlistIds.length === 0) {
+          setWatchlistMovies([]);
+        } else {
+          // Fetch movies from individual movie API
+          const moviePromises = watchlistIds.map(async (id: number) => {
+            try {
+              const response = await fetch(`/api/movies/${id}`);
+              const data = await response.json();
+              return data.success ? data.data : null;
+            } catch (error) {
+              console.error(`Error fetching movie ${id}:`, error);
+              return null;
+            }
+          });
+
+          const movies = await Promise.all(moviePromises);
+          const validMovies = movies.filter(movie => movie !== null);
+          setWatchlistMovies(validMovies);
+        }
+      }
     } catch (error) {
       console.error('Error loading watchlist:', error);
       toast.error('Failed to load watchlist');
@@ -69,23 +85,58 @@ export default function WatchlistPage() {
     }
   };
 
-  const handleRemoveFromWatchlist = (movie: Movie) => {
-    const updatedWatchlist = watchlist.filter(id => id !== movie.movieId);
-    setWatchlist(updatedWatchlist);
-    setWatchlistMovies(prev => prev.filter(m => m.movieId !== movie.movieId));
-    localStorage.setItem('cineai-watchlist', JSON.stringify(updatedWatchlist));
-    toast.success(`Removed "${movie.title}" from watchlist`);
+  const handleRemoveFromWatchlist = async (movie: Movie) => {
+    if (!user) return;
+
+    try {
+      // Remove from Neo4j database
+      const response = await fetch(`/api/users/watchlist?userId=${user.id}&movieId=${movie.movieId}`, {
+        method: 'DELETE'
+      });
+
+      if (response.ok) {
+        const updatedWatchlist = watchlist.filter(id => id !== movie.movieId);
+        setWatchlist(updatedWatchlist);
+        setWatchlistMovies(prev => prev.filter(m => m.movieId !== movie.movieId));
+
+        // Also update localStorage as fallback
+        localStorage.setItem('hojiai-watchlist', JSON.stringify(updatedWatchlist));
+        toast.success(`Removed "${movie.title}" from watchlist`);
+      } else {
+        const errorData = await response.json();
+        toast.error(errorData.error || 'Failed to remove from watchlist');
+      }
+    } catch (error) {
+      console.error('Error removing from watchlist:', error);
+      toast.error('Failed to remove from watchlist');
+    }
   };
 
   const handleMovieSelect = (movie: Movie) => {
     setSelectedMovie(movie);
   };
 
-  const handleClearWatchlist = () => {
-    setWatchlist([]);
-    setWatchlistMovies([]);
-    localStorage.setItem('cineai-watchlist', JSON.stringify([]));
-    toast.success('Watchlist cleared');
+  const handleClearWatchlist = async () => {
+    if (!user) return;
+
+    try {
+      // Clear all movies from watchlist in Neo4j
+      const deletePromises = watchlistMovies.map(movie =>
+        fetch(`/api/users/watchlist?userId=${user.id}&movieId=${movie.movieId}`, {
+          method: 'DELETE'
+        })
+      );
+
+      await Promise.all(deletePromises);
+
+      setWatchlist([]);
+      setWatchlistMovies([]);
+      localStorage.setItem('hojiai-watchlist', JSON.stringify([]));
+      toast.success('Watchlist cleared');
+    } catch (error) {
+      console.error('Error clearing watchlist:', error);
+      toast.error('Failed to clear watchlist');
+    }
   };
 
   const handleVoiceSearch = () => {

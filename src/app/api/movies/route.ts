@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
     let result;
 
     if (query) {
-      result = await movieService.searchMovies(query, page, limit);
+      result = await movieService.searchMovies(query, page, limit, filters);
     } else {
       result = await movieService.getMovies(page, limit, filters);
     }
