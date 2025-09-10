@@ -161,11 +161,6 @@ export default function ProfilePage() {
 
   const handleLogout = () => {
     logout();
-    router.push('/onboarding');
-  };
-
-  const handleLogout = () => {
-    logout();
     toast.success('Logged out successfully');
     router.push('/onboarding');
   };
