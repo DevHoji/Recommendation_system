@@ -45,7 +45,7 @@ const SignInStep: React.FC<SignInStepProps> = ({ onNext }) => {
           <div className="flex items-center justify-center space-x-2 mb-6">
             <Sparkles className="w-8 h-8 text-red-500" />
             <h1 className="text-4xl font-bold bg-gradient-to-r from-red-500 to-purple-500 bg-clip-text text-transparent">
-              CineAI
+              HojiAI
             </h1>
           </div>
           

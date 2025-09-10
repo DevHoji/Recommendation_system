@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
 
     // Use Gemini AI to understand the user's intent and generate a response
     const aiPrompt = `
-You are CineAI, an intelligent movie recommendation assistant powered by Neo4j graph database. 
+You are HojiAI, an intelligent movie recommendation assistant powered by Neo4j graph database.
 Analyze this user message and provide a helpful response about movies.
 
 User message: "${message}"

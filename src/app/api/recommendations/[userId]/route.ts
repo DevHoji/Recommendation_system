@@ -9,10 +9,19 @@ export async function GET(
   try {
     const resolvedParams = await params;
     const { userId } = resolvedParams;
-    
+
+    console.log(`Getting recommendations for user ${userId}`);
+
     // Test Neo4j connection first
-    const isConnected = await neo4jService.testConnection();
-    
+    let isConnected = false;
+    try {
+      isConnected = await neo4jService.testConnection();
+      console.log(`Neo4j connection status: ${isConnected}`);
+    } catch (error) {
+      console.error('Error testing Neo4j connection:', error);
+      isConnected = false;
+    }
+
     if (!isConnected) {
       console.log('Neo4j not available, using mock recommendations');
       return getMockRecommendations(userId);

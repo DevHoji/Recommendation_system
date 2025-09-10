@@ -94,7 +94,7 @@ export default function LoadingSpinner({
 }
 
 // Full page loading component
-export function FullPageLoader({ text = 'Loading CineAI...' }: { text?: string }) {
+export function FullPageLoader({ text = 'Loading HojiAI...' }: { text?: string }) {
   return (
     <div className="fixed inset-0 bg-black/90 backdrop-blur-sm flex items-center justify-center z-50">
       <LoadingSpinner size="lg" text={text} variant="cinema" />

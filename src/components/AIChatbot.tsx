@@ -131,7 +131,7 @@ export default function AIChatbot({ onMovieSelect }: AIChatbotProps) {
                   <Bot className="w-4 h-4 text-white" />
                 </div>
                 <div>
-                  <h3 className="text-white font-semibold">CineAI Assistant</h3>
+                  <h3 className="text-white font-semibold">HojiAI Assistant</h3>
                   <p className="text-gray-400 text-xs">Powered by Neo4j & AI</p>
                 </div>
               </div>

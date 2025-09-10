@@ -10,7 +10,7 @@ interface LoadingScreenProps {
 }
 
 const LoadingScreen: React.FC<LoadingScreenProps> = ({
-  message = "Loading CineAI...",
+  message = "Loading HojiAI...",
   showLogo = true
 }) => {
   const [isClient, setIsClient] = useState(false);
@@ -37,7 +37,7 @@ const LoadingScreen: React.FC<LoadingScreenProps> = ({
             <div className="flex items-center justify-center space-x-3 mb-8">
               <Sparkles className="w-12 h-12 text-red-500" />
               <h1 className="text-5xl font-bold bg-gradient-to-r from-red-500 to-purple-500 bg-clip-text text-transparent">
-                CineAI
+                HojiAI
               </h1>
             </div>
           )}
@@ -87,7 +87,7 @@ const LoadingScreen: React.FC<LoadingScreenProps> = ({
           >
             <Sparkles className="w-12 h-12 text-red-500" />
             <h1 className="text-5xl font-bold bg-gradient-to-r from-red-500 to-purple-500 bg-clip-text text-transparent">
-              CineAI
+              HojiAI
             </h1>
           </motion.div>
         )}

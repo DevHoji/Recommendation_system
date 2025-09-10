@@ -53,13 +53,13 @@ export default function Home() {
         console.error('Error loading watchlist:', error);
         // Fallback to localStorage
         if (typeof window !== 'undefined') {
-          const savedWatchlist = localStorage.getItem('cineai-watchlist');
+          const savedWatchlist = localStorage.getItem('hojiai-watchlist');
           if (savedWatchlist) {
             try {
               setWatchlist(JSON.parse(savedWatchlist));
             } catch (error) {
               console.error('Error parsing watchlist from localStorage:', error);
-              localStorage.removeItem('cineai-watchlist');
+              localStorage.removeItem('hojiai-watchlist');
             }
           }
         }
@@ -72,7 +72,7 @@ export default function Home() {
   // Save watchlist to localStorage (client-side only)
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      localStorage.setItem('cineai-watchlist', JSON.stringify(watchlist));
+      localStorage.setItem('hojiai-watchlist', JSON.stringify(watchlist));
     }
   }, [watchlist]);
 
@@ -189,7 +189,7 @@ export default function Home() {
 
   // Show loading screen while checking authentication
   if (isLoading) {
-    return <LoadingScreen message="Loading CineAI..." />;
+    return <LoadingScreen message="Loading HojiAI..." />;
   }
 
   // Don't render main content if user is not authenticated or onboarded

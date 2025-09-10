@@ -62,7 +62,7 @@ const Header: React.FC<HeaderProps> = ({
                 className="text-2xl font-bold text-red-600"
               >
                 <Link href="/" className="hover:text-red-400 transition-colors">
-                  CineAI
+                  HojiAI
                 </Link>
               </motion.div>
             </div>

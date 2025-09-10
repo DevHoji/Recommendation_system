@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import neo4jService from '@/lib/neo4j';
+import { neo4jService } from '@/lib/neo4j';
+import { toNumber } from '@/lib/utils';
 
 // GET user's watchlist
 export async function GET(request: NextRequest) {
@@ -14,26 +15,39 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // Test Neo4j connection first
+    const isConnected = await neo4jService.testConnection();
+
+    if (!isConnected) {
+      console.log('Neo4j not available, returning empty watchlist');
+      return NextResponse.json({
+        success: true,
+        watchlist: [],
+        count: 0,
+        note: "Neo4j not available - using mock data"
+      });
+    }
+
     const watchlistQuery = `
       MATCH (u:User {userId: $userId})-[w:WATCHLIST]->(m:Movie)
       OPTIONAL MATCH (m)<-[r:RATED]-()
       WITH m, w, avg(r.rating) as avgRating, count(r) as ratingCount
-      RETURN m.movieId as movieId, m.title as title, m.genres as genres, 
+      RETURN m.movieId as movieId, m.title as title, m.genres as genres,
              m.year as year, m.tmdbId as tmdbId, avgRating, ratingCount,
              w.addedAt as addedAt
       ORDER BY w.addedAt DESC
     `;
 
-    const results = await neo4jService.runQuery(watchlistQuery, { userId });
+    const results = await neo4jService.runQuery(watchlistQuery, { userId: parseInt(userId) });
 
     const watchlist = results.map((record: any) => ({
-      movieId: record.movieId,
+      movieId: toNumber(record.movieId),
       title: record.title,
       genres: record.genres,
-      year: record.year,
-      tmdbId: record.tmdbId,
+      year: toNumber(record.year),
+      tmdbId: toNumber(record.tmdbId),
       averageRating: record.avgRating ? parseFloat(record.avgRating.toFixed(1)) : undefined,
-      ratingCount: record.ratingCount,
+      ratingCount: toNumber(record.ratingCount),
       addedAt: record.addedAt
     }));
 
@@ -45,10 +59,12 @@ export async function GET(request: NextRequest) {
 
   } catch (error) {
     console.error('Get watchlist error:', error);
-    return NextResponse.json(
-      { error: 'Failed to get watchlist' },
-      { status: 500 }
-    );
+    return NextResponse.json({
+      success: true,
+      watchlist: [],
+      count: 0,
+      note: "Error occurred - returning empty watchlist"
+    });
   }
 }
 
@@ -64,19 +80,30 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Test Neo4j connection first
+    const isConnected = await neo4jService.testConnection();
+
+    if (!isConnected) {
+      console.log('Neo4j not available, cannot add to watchlist');
+      return NextResponse.json({
+        success: false,
+        message: "Database not available - cannot add to watchlist"
+      });
+    }
+
     // Check if movie is already in watchlist
     const checkQuery = `
       MATCH (u:User {userId: $userId})-[w:WATCHLIST]->(m:Movie {movieId: $movieId})
       RETURN w
     `;
 
-    const existing = await neo4jService.runQuery(checkQuery, { userId, movieId });
+    const existing = await neo4jService.runQuery(checkQuery, { userId: parseInt(userId), movieId: parseInt(movieId) });
 
     if (existing.length > 0) {
-      return NextResponse.json(
-        { error: 'Movie already in watchlist' },
-        { status: 409 }
-      );
+      return NextResponse.json({
+        success: false,
+        message: 'Movie already in watchlist'
+      });
     }
 
     // Add to watchlist
@@ -87,13 +114,13 @@ export async function POST(request: NextRequest) {
       RETURN m.title as title
     `;
 
-    const results = await neo4jService.runQuery(addQuery, { userId, movieId });
+    const results = await neo4jService.runQuery(addQuery, { userId: parseInt(userId), movieId: parseInt(movieId) });
 
     if (results.length === 0) {
-      return NextResponse.json(
-        { error: 'User or movie not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({
+        success: false,
+        message: 'User or movie not found'
+      });
     }
 
     return NextResponse.json({
@@ -103,10 +130,10 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('Add to watchlist error:', error);
-    return NextResponse.json(
-      { error: 'Failed to add to watchlist' },
-      { status: 500 }
-    );
+    return NextResponse.json({
+      success: false,
+      message: 'Failed to add to watchlist'
+    });
   }
 }
 

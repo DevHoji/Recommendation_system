@@ -4,10 +4,10 @@ import { Toaster } from "react-hot-toast";
 import { UserProvider } from "@/contexts/UserContext";
 
 export const metadata: Metadata = {
-  title: "CineAI - AI-Powered Movie Recommendations",
+  title: "HojiAI - AI-Powered Movie Recommendations",
   description: "Discover your next favorite movie with AI-powered recommendations, voice search, and personalized suggestions.",
   keywords: ["movies", "recommendations", "AI", "voice search", "cinema", "films"],
-  authors: [{ name: "CineAI Team" }],
+  authors: [{ name: "HojiAI Team" }],
 };
 
 export default function RootLayout({

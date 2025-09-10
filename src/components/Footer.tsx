@@ -15,7 +15,7 @@ export default function Footer() {
               animate={{ opacity: 1, y: 0 }}
               className="mb-6"
             >
-              <h3 className="text-2xl font-bold text-red-600 mb-4">CineAI</h3>
+              <h3 className="text-2xl font-bold text-red-600 mb-4">HojiAI</h3>
               <p className="text-gray-300 mb-4 max-w-md">
                 AI-powered movie recommendations with voice search capabilities. 
                 Discover your next favorite movie with intelligent suggestions 
@@ -94,7 +94,7 @@ export default function Footer() {
               <span>GitHub</span>
             </a>
             <span className="text-gray-500">•</span>
-            <span className="text-gray-400">© 2024 CineAI</span>
+            <span className="text-gray-400">© 2024 HojiAI</span>
           </div>
         </div>
       </div>

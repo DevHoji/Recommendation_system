@@ -67,7 +67,7 @@ const OnboardingFlow: React.FC = () => {
       // Mark onboarding as complete
       completeOnboarding();
 
-      toast.success(`Welcome to CineAI, ${onboardingData.username}!`);
+      toast.success(`Welcome to HojiAI, ${onboardingData.username}!`);
       
       // Redirect to home page
       window.location.href = '/';
