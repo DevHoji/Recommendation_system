@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { databaseInitializer } from '@/lib/database-init';
-import { allMockMovies } from '@/lib/mock-data';
 
 export async function POST(request: NextRequest) {
   try {
@@ -18,23 +17,14 @@ export async function POST(request: NextRequest) {
         usingMockData: false
       });
     } catch (dbError) {
-      console.warn('Neo4j database not available, using mock data:', dbError instanceof Error ? dbError.message : String(dbError));
-
-      // Return mock data statistics
-      const mockStats = {
-        movies: allMockMovies.length,
-        users: 610,
-        ratings: 100836,
-        genres: 18,
-        tags: 3683
-      };
+      console.error('Neo4j database connection failed:', dbError instanceof Error ? dbError.message : String(dbError));
 
       return NextResponse.json({
-        success: true,
-        message: 'Using mock data for demonstration (Neo4j not available)',
-        stats: mockStats,
-        usingMockData: true
-      });
+        success: false,
+        message: 'Database connection failed. Please ensure Neo4j is properly configured.',
+        error: dbError instanceof Error ? dbError.message : 'Unknown error',
+        hint: 'Check your Neo4j AuraDB credentials and ensure the database is running.'
+      }, { status: 500 });
     }
   } catch (error) {
     console.error('Database initialization error:', error);
@@ -59,22 +49,14 @@ export async function GET(request: NextRequest) {
         usingMockData: false
       });
     } catch (dbError) {
-      console.warn('Neo4j database not available, returning mock stats:', dbError instanceof Error ? dbError.message : String(dbError));
-
-      // Return mock data statistics
-      const mockStats = {
-        movies: allMockMovies.length,
-        users: 610,
-        ratings: 100836,
-        genres: 18,
-        tags: 3683
-      };
+      console.error('Neo4j database connection failed:', dbError instanceof Error ? dbError.message : String(dbError));
 
       return NextResponse.json({
-        success: true,
-        stats: mockStats,
-        usingMockData: true
-      });
+        success: false,
+        message: 'Database connection failed. Please ensure Neo4j is properly configured.',
+        error: dbError instanceof Error ? dbError.message : 'Unknown error',
+        hint: 'Check your Neo4j AuraDB credentials and ensure the database is running.'
+      }, { status: 500 });
     }
   } catch (error) {
     console.error('Error getting database stats:', error);

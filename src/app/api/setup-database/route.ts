@@ -130,7 +130,7 @@ export async function POST(request: NextRequest) {
       'MATCH ()-[t:TAGGED]->() RETURN count(t) as tagCount'
     ];
 
-    const verification = {};
+    const verification: Record<string, any> = {};
     for (const query of verificationQueries) {
       const result = await neo4jService.runQuery(query);
       const key = Object.keys(result[0])[0];

@@ -20,13 +20,7 @@ export async function GET(request: NextRequest) {
       }, { status: 400 });
     }
 
-    // Test Neo4j connection
-    const isConnected = await neo4jService.testConnection();
-    
-    if (!isConnected) {
-      console.log('Neo4j not available, using mock search results');
-      return getMockSearchResults(query, genre, page, limit);
-    }
+    // Neo4j connection is required - no fallback to mock data
 
     // Build Cypher query based on search parameters
     let cypherQuery = 'MATCH (m:Movie) WHERE 1=1';
@@ -260,39 +254,4 @@ function processVoiceQuery(voiceQuery: string): any {
   return params;
 }
 
-function getMockSearchResults(query: string, genre: string, page: number, limit: number) {
-  // Use the imported mock data functions
-  let mockResults = allMockMovies;
-
-  // Use the same filtering logic as movies API
-  if (query) {
-    mockResults = searchMockMovies(query, mockResults);
-  }
-
-  // Apply genre filter
-  const filters: any = {};
-  if (genre) {
-    filters.genre = genre;
-  }
-
-  if (Object.keys(filters).length > 0) {
-    mockResults = filterMockMovies(mockResults, filters);
-  }
-
-  // Apply pagination
-  const paginatedResult = paginateMockMovies(mockResults, page, limit);
-
-  return NextResponse.json({
-    success: true,
-    data: paginatedResult.movies,
-    pagination: {
-      page: paginatedResult.page,
-      limit: paginatedResult.limit,
-      total: paginatedResult.total,
-      hasMore: paginatedResult.hasMore,
-      totalPages: paginatedResult.totalPages
-    },
-    searchParams: { query, genre },
-    note: "Using mock data - Neo4j not available"
-  });
-}
+// Removed getMockSearchResults function - using Neo4j only

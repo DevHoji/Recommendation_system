@@ -91,20 +91,15 @@ export async function POST(request: NextRequest) {
         searchPerformed = true;
       }
     } catch (dbError) {
-      console.warn('Database not available for voice search, using mock data');
+      console.error('Neo4j database connection failed for voice search:', dbError instanceof Error ? dbError.message : String(dbError));
 
-      // Use mock data for voice search
-      const { allMockMovies, searchMockMovies, filterMockMovies } = await import('@/lib/mock-data');
-
-      if (voiceSearchResult.intent === 'search') {
-        movies = searchMockMovies(voiceSearchResult.query).slice(0, 10);
-      } else if (voiceSearchResult.intent === 'filter') {
-        movies = filterMockMovies(allMockMovies, voiceSearchResult.parameters).slice(0, 10);
-      } else if (voiceSearchResult.intent === 'recommend') {
-        movies = filterMockMovies(allMockMovies, { sortBy: 'popularity', sortOrder: 'desc' }).slice(0, 10);
-      }
-
-      searchPerformed = true;
+      // Return error instead of using mock data
+      return NextResponse.json({
+        success: false,
+        message: 'Database connection failed. Please ensure Neo4j is properly configured.',
+        error: dbError instanceof Error ? dbError.message : 'Unknown error',
+        hint: 'Voice search requires a working Neo4j connection.'
+      }, { status: 500 });
     }
 
     // Generate TTS response
