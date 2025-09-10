@@ -37,20 +37,37 @@ export default function Home() {
     }
   }, [isAuthenticated, user, isLoading, router]);
 
-  // Load watchlist from localStorage (client-side only)
+  // Load watchlist from Neo4j
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const savedWatchlist = localStorage.getItem('cineai-watchlist');
-      if (savedWatchlist) {
-        try {
-          setWatchlist(JSON.parse(savedWatchlist));
-        } catch (error) {
-          console.error('Error parsing watchlist from localStorage:', error);
-          localStorage.removeItem('cineai-watchlist');
+    const loadWatchlist = async () => {
+      if (!user) return;
+
+      try {
+        const response = await fetch(`/api/users/watchlist?userId=${user.id}`);
+        if (response.ok) {
+          const data = await response.json();
+          const watchlistIds = data.watchlist?.map((movie: any) => movie.movieId) || [];
+          setWatchlist(watchlistIds);
+        }
+      } catch (error) {
+        console.error('Error loading watchlist:', error);
+        // Fallback to localStorage
+        if (typeof window !== 'undefined') {
+          const savedWatchlist = localStorage.getItem('cineai-watchlist');
+          if (savedWatchlist) {
+            try {
+              setWatchlist(JSON.parse(savedWatchlist));
+            } catch (error) {
+              console.error('Error parsing watchlist from localStorage:', error);
+              localStorage.removeItem('cineai-watchlist');
+            }
+          }
         }
       }
-    }
-  }, []);
+    };
+
+    loadWatchlist();
+  }, [user]);
 
   // Save watchlist to localStorage (client-side only)
   useEffect(() => {
@@ -122,16 +139,48 @@ export default function Home() {
     }
   };
 
-  const handleAddToWatchlist = (movie: Movie) => {
-    if (!watchlist.includes(movie.movieId)) {
-      setWatchlist(prev => [...prev, movie.movieId]);
-      toast.success(`Added "${movie.title}" to watchlist`);
+  const handleAddToWatchlist = async (movie: Movie) => {
+    if (!user || watchlist.includes(movie.movieId)) return;
+
+    try {
+      const response = await fetch('/api/users/watchlist', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user.id, movieId: movie.movieId })
+      });
+
+      if (response.ok) {
+        setWatchlist(prev => [...prev, movie.movieId]);
+        toast.success(`Added "${movie.title}" to watchlist`);
+      } else {
+        const errorData = await response.json();
+        toast.error(errorData.error || 'Failed to add to watchlist');
+      }
+    } catch (error) {
+      console.error('Error adding to watchlist:', error);
+      toast.error('Failed to add to watchlist');
     }
   };
 
-  const handleRemoveFromWatchlist = (movie: Movie) => {
-    setWatchlist(prev => prev.filter(id => id !== movie.movieId));
-    toast.success(`Removed "${movie.title}" from watchlist`);
+  const handleRemoveFromWatchlist = async (movie: Movie) => {
+    if (!user) return;
+
+    try {
+      const response = await fetch(`/api/users/watchlist?userId=${user.id}&movieId=${movie.movieId}`, {
+        method: 'DELETE'
+      });
+
+      if (response.ok) {
+        setWatchlist(prev => prev.filter(id => id !== movie.movieId));
+        toast.success(`Removed "${movie.title}" from watchlist`);
+      } else {
+        const errorData = await response.json();
+        toast.error(errorData.error || 'Failed to remove from watchlist');
+      }
+    } catch (error) {
+      console.error('Error removing from watchlist:', error);
+      toast.error('Failed to remove from watchlist');
+    }
   };
 
   const handleMovieSelect = (movie: Movie) => {

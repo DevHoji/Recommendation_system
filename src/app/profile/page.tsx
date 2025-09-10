@@ -11,6 +11,13 @@ import LoadingScreen from '@/components/LoadingScreen';
 import { Movie } from '@/lib/movie-service';
 import toast from 'react-hot-toast';
 
+interface RecommendationSection {
+  title: string;
+  movies: Movie[];
+  loading: boolean;
+  description: string;
+}
+
 export default function ProfilePage() {
   const { user: currentUser, isAuthenticated, isLoading, logout } = useUser();
   const router = useRouter();
@@ -25,7 +32,8 @@ export default function ProfilePage() {
   });
   
   const [recentlyRated, setRecentlyRated] = useState<Movie[]>([]);
-  const [recommendations, setRecommendations] = useState<Movie[]>([]);
+  const [recommendations, setRecommendations] = useState<RecommendationSection[]>([]);
+  const [watchlist, setWatchlist] = useState<Movie[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -40,48 +48,120 @@ export default function ProfilePage() {
   }, [isAuthenticated, currentUser, isLoading, router]);
 
   const loadUserData = async () => {
+    if (!currentUser) return;
+
     try {
       setLoading(true);
-      
-      // Load user recommendations
-      const recommendationsResponse = await fetch(`/api/recommendations/${profileData.id}`);
-      if (recommendationsResponse.ok) {
-        const recommendationsData = await recommendationsResponse.json();
-        if (recommendationsData.success) {
-          setRecommendations(recommendationsData.data.slice(0, 6));
-        }
+
+      // Load user's watchlist
+      const watchlistResponse = await fetch(`/api/users/watchlist?userId=${currentUser.id}`);
+      let watchlistMovies = [];
+      if (watchlistResponse.ok) {
+        const watchlistData = await watchlistResponse.json();
+        watchlistMovies = watchlistData.watchlist || [];
       }
 
-      // Load recently rated movies (mock data for now)
-      const mockRecentlyRated = [
+      // Load different types of recommendations
+      const recommendationSections = [
         {
-          movieId: 1,
-          title: "Inception",
-          genres: ["Action", "Sci-Fi"],
-          year: 2010,
-          averageRating: 4.8,
-          ratingCount: 1500,
-          posterUrl: "https://image.tmdb.org/t/p/w500/9gk7adHYeDvHkCSEqAvQNLV5Uge.jpg"
+          title: 'Personalized for You',
+          description: 'Based on your preferences and viewing history',
+          endpoint: `/api/recommendations/${currentUser.id}?limit=12`
         },
         {
-          movieId: 2,
-          title: "The Dark Knight",
-          genres: ["Action", "Crime"],
-          year: 2008,
-          averageRating: 4.9,
-          ratingCount: 2000,
-          posterUrl: "https://image.tmdb.org/t/p/w500/qJ2tW6WMUDux911r6m7haRef0WH.jpg"
+          title: 'Because You Like ' + (currentUser.preferences.genres[0] || 'Movies'),
+          description: 'Movies matching your favorite genres',
+          endpoint: `/api/movies?genre=${currentUser.preferences.genres[0] || 'Action'}&limit=12`
+        },
+        {
+          title: 'Trending in Your Genres',
+          description: 'Popular movies in genres you love',
+          endpoint: `/api/movies?sortBy=popularity&sortOrder=desc&limit=12`
+        },
+        {
+          title: 'Highly Rated Picks',
+          description: 'Top-rated movies you might enjoy',
+          endpoint: `/api/movies?sortBy=rating&sortOrder=desc&limit=12`
         }
       ];
-      
-      setRecentlyRated(mockRecentlyRated);
-      
+
+      const sectionPromises = recommendationSections.map(async (section) => {
+        try {
+          const response = await fetch(section.endpoint);
+          const data = await response.json();
+          return {
+            title: section.title,
+            description: section.description,
+            movies: data.data || data.movies || [],
+            loading: false
+          };
+        } catch (error) {
+          console.error(`Error loading ${section.title}:`, error);
+          return {
+            title: section.title,
+            description: section.description,
+            movies: [],
+            loading: false
+          };
+        }
+      });
+
+      const loadedSections = await Promise.all(sectionPromises);
+      setRecommendations(loadedSections);
+
+      // Set watchlist movies for display
+      setWatchlist(watchlistMovies);
+      setRecentlyRated(watchlistMovies.slice(0, 6));
+
     } catch (error) {
-      console.error('Error loading user data:', error);
-      toast.error('Failed to load user data');
+      console.error('Error loading profile data:', error);
+      toast.error('Failed to load profile data');
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleAddToWatchlist = async (movie: Movie) => {
+    if (!currentUser) return;
+
+    try {
+      const response = await fetch('/api/users/watchlist', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: currentUser.id, movieId: movie.movieId })
+      });
+
+      if (response.ok) {
+        setWatchlist(prev => [...prev, movie]);
+        toast.success(`Added "${movie.title}" to watchlist`);
+      }
+    } catch (error) {
+      console.error('Error adding to watchlist:', error);
+      toast.error('Failed to add to watchlist');
+    }
+  };
+
+  const handleRemoveFromWatchlist = async (movie: Movie) => {
+    if (!currentUser) return;
+
+    try {
+      const response = await fetch(`/api/users/watchlist?userId=${currentUser.id}&movieId=${movie.movieId}`, {
+        method: 'DELETE'
+      });
+
+      if (response.ok) {
+        setWatchlist(prev => prev.filter(m => m.movieId !== movie.movieId));
+        toast.success(`Removed "${movie.title}" from watchlist`);
+      }
+    } catch (error) {
+      console.error('Error removing from watchlist:', error);
+      toast.error('Failed to remove from watchlist');
+    }
+  };
+
+  const handleLogout = () => {
+    logout();
+    router.push('/onboarding');
   };
 
   const handleLogout = () => {
@@ -186,38 +266,56 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        {/* Personalized Recommendations */}
-        {recommendations.length > 0 && (
-          <div className="glass-container">
-            <h2 className="text-2xl font-bold text-white mb-6">Recommended for You</h2>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-              {recommendations.map((movie) => (
-                <MovieCard
-                  key={movie.movieId}
-                  movie={movie}
-                  size="small"
-                  onMovieClick={() => {}}
-                  onAddToWatchlist={() => {}}
-                  onRemoveFromWatchlist={() => {}}
-                />
-              ))}
+        {/* Recommendation Sections */}
+        {recommendations.map((section, index) => (
+          <div key={section.title} className="glass-container">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 className="text-2xl font-bold text-white">{section.title}</h2>
+                <p className="text-gray-400 text-sm mt-1">{section.description}</p>
+              </div>
             </div>
-          </div>
-        )}
 
-        {/* Recently Rated */}
-        {recentlyRated.length > 0 && (
+            {section.loading ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="w-8 h-8 border-2 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
+              </div>
+            ) : section.movies.length > 0 ? (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                {section.movies.slice(0, 12).map((movie) => (
+                  <MovieCard
+                    key={movie.movieId}
+                    movie={movie}
+                    size="small"
+                    onMovieClick={() => {}}
+                    onAddToWatchlist={() => handleAddToWatchlist(movie)}
+                    onRemoveFromWatchlist={() => handleRemoveFromWatchlist(movie)}
+                    isInWatchlist={watchlist.some(w => w.movieId === movie.movieId)}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-12">
+                <p className="text-gray-400">No recommendations available</p>
+              </div>
+            )}
+          </div>
+        ))}
+
+        {/* My Watchlist */}
+        {watchlist.length > 0 && (
           <div className="glass-container">
-            <h2 className="text-2xl font-bold text-white mb-6">Recently Rated</h2>
+            <h2 className="text-2xl font-bold text-white mb-6">My Watchlist</h2>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-              {recentlyRated.map((movie) => (
+              {watchlist.map((movie) => (
                 <MovieCard
                   key={movie.movieId}
                   movie={movie}
                   size="small"
                   onMovieClick={() => {}}
-                  onAddToWatchlist={() => {}}
-                  onRemoveFromWatchlist={() => {}}
+                  onAddToWatchlist={() => handleAddToWatchlist(movie)}
+                  onRemoveFromWatchlist={() => handleRemoveFromWatchlist(movie)}
+                  isInWatchlist={true}
                 />
               ))}
             </div>

@@ -121,11 +121,31 @@ export default function HomePage({
       const allData = await Promise.all(dataPromises);
 
       setSections(prevSections =>
-        prevSections.map((section, index) => ({
-          ...section,
-          movies: allData[index].success ? allData[index].data.map((movie: any) => sanitizeMovieData(movie)) : [],
-          loading: false
-        }))
+        prevSections.map((section, index) => {
+          let movies = [];
+          const responseData = allData[index];
+
+          if (responseData.success) {
+            // Handle recommendations API response (first section)
+            if (index === 0 && responseData.data) {
+              movies = responseData.data.map((movie: any) => sanitizeMovieData(movie));
+            }
+            // Handle regular movies API response (other sections)
+            else if (responseData.movies) {
+              movies = responseData.movies.map((movie: any) => sanitizeMovieData(movie));
+            }
+            // Handle data array response
+            else if (responseData.data) {
+              movies = responseData.data.map((movie: any) => sanitizeMovieData(movie));
+            }
+          }
+
+          return {
+            ...section,
+            movies,
+            loading: false
+          };
+        })
       );
     } catch (error) {
       console.error('Error loading homepage data:', error);
