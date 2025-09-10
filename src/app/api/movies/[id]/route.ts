@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { movieService } from '@/lib/movie-service';
+import { allMockMovies } from '@/lib/mock-data';
 
 export async function GET(
   request: NextRequest,
@@ -18,7 +19,16 @@ export async function GET(
       }, { status: 400 });
     }
 
-    const movie = await movieService.getMovieById(movieId, userId);
+    let movie;
+
+    try {
+      movie = await movieService.getMovieById(movieId, userId);
+    } catch (dbError) {
+      console.warn('Database not available, using mock data:', dbError instanceof Error ? dbError.message : String(dbError));
+
+      // Use mock data as fallback
+      movie = allMockMovies.find(m => m.movieId === movieId);
+    }
 
     if (!movie) {
       return NextResponse.json({

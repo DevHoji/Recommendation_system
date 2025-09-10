@@ -314,7 +314,7 @@ class MovieService {
       };
     } catch (error) {
       console.error(`Error getting movie details for ${movieId}:`, error);
-      return null;
+      throw error; // Re-throw the error so API route can handle it with mock data
     }
   }
 }

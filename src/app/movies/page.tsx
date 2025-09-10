@@ -20,6 +20,7 @@ export default function MoviesPage() {
   const [watchlist, setWatchlist] = useState<number[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
+  const [filters, setFilters] = useState<any>({});
 
   // Load watchlist from localStorage
   useEffect(() => {
@@ -35,15 +36,18 @@ export default function MoviesPage() {
     localStorage.setItem('cineai-watchlist', JSON.stringify(watchlist));
   }, [watchlist]);
 
-  const loadMovies = async (page = 1, query = '') => {
+  const loadMovies = async (page = 1, query = '', currentFilters = {}) => {
     try {
       setLoading(true);
       const params = new URLSearchParams({
         page: page.toString(),
         limit: '20',
-        sortBy: 'popularity',
-        sortOrder: 'desc',
-        ...(query && { search: query })
+        sortBy: currentFilters.sortBy || 'popularity',
+        sortOrder: currentFilters.sortOrder || 'desc',
+        ...(query && { q: query }),
+        ...(currentFilters.genre && { genre: currentFilters.genre }),
+        ...(currentFilters.year && { year: currentFilters.year.toString() }),
+        ...(currentFilters.minRating && { minRating: currentFilters.minRating.toString() })
       });
 
       const response = await fetch(`/api/movies?${params}`);
@@ -72,11 +76,79 @@ export default function MoviesPage() {
     debounce(async (query: string) => {
       setIsSearching(true);
       setSearchQuery(query);
-      await loadMovies(1, query);
+
+      if (query.trim()) {
+        // Use search API for text search
+        try {
+          const params = new URLSearchParams({
+            q: query,
+            page: '1',
+            limit: '20',
+            ...(filters.genre && { genre: filters.genre }),
+            ...(filters.year && { year: filters.year.toString() }),
+            ...(filters.minRating && { minRating: filters.minRating.toString() }),
+            sortBy: filters.sortBy || 'relevance'
+          });
+
+          const response = await fetch(`/api/search?${params}`);
+          const data = await response.json();
+
+          if (data.success) {
+            setMovies(data.data);
+            setHasMore(data.pagination.hasMore);
+            setCurrentPage(1);
+          } else {
+            throw new Error(data.error || 'Search failed');
+          }
+        } catch (error) {
+          console.error('Search error:', error);
+          toast.error('Search failed');
+        }
+      } else {
+        // Load all movies if no search query
+        await loadMovies(1, '', filters);
+      }
+
       setIsSearching(false);
     }, 300),
-    []
+    [filters]
   );
+
+  const handleFilterChange = async (newFilters: any) => {
+    setFilters(newFilters);
+    setCurrentPage(1);
+
+    if (searchQuery.trim()) {
+      // Use search API when there's a search query
+      try {
+        const params = new URLSearchParams({
+          q: searchQuery,
+          page: '1',
+          limit: '20',
+          ...(newFilters.genre && { genre: newFilters.genre }),
+          ...(newFilters.year && { year: newFilters.year.toString() }),
+          ...(newFilters.minRating && { minRating: newFilters.minRating.toString() }),
+          sortBy: newFilters.sortBy || 'relevance'
+        });
+
+        const response = await fetch(`/api/search?${params}`);
+        const data = await response.json();
+
+        if (data.success) {
+          setMovies(data.data);
+          setHasMore(data.pagination.hasMore);
+        } else {
+          throw new Error(data.error || 'Filter failed');
+        }
+      } catch (error) {
+        console.error('Filter error:', error);
+        toast.error('Filter failed');
+      }
+    } else {
+      // Use movies API when no search query
+      await loadMovies(1, '', newFilters);
+    }
+  };
 
   const handleVoiceSearch = async (transcript: string) => {
     try {
@@ -123,7 +195,7 @@ export default function MoviesPage() {
 
   const handleLoadMore = () => {
     if (hasMore && !loading) {
-      loadMovies(currentPage + 1, searchQuery);
+      loadMovies(currentPage + 1, searchQuery, filters);
     }
   };
 
@@ -164,6 +236,7 @@ export default function MoviesPage() {
             hasMore={hasMore}
             onLoadMore={handleLoadMore}
             showFilters={true}
+            onFilterChange={handleFilterChange}
           />
         </div>
       </main>

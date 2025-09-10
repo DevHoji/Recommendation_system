@@ -181,6 +181,107 @@ export const mockMovies: Movie[] = [
     averageRating: 2.9,
     ratingCount: 25,
     posterUrl: "https://image.tmdb.org/t/p/w500/3JfTJTf5jdJOCvS3nLkqEWyWZbL.jpg"
+  },
+  // Additional popular movies for better testing
+  {
+    movieId: 21,
+    title: "The Dark Knight",
+    genres: ["Action", "Crime", "Drama"],
+    year: 2008,
+    averageRating: 4.7,
+    ratingCount: 2500,
+    posterUrl: "https://image.tmdb.org/t/p/w500/qJ2tW6WMUDux911r6m7haRef0WH.jpg",
+    tmdbId: 155
+  },
+  {
+    movieId: 22,
+    title: "Inception",
+    genres: ["Action", "Sci-Fi", "Thriller"],
+    year: 2010,
+    averageRating: 4.8,
+    ratingCount: 2200,
+    posterUrl: "https://image.tmdb.org/t/p/w500/9gk7adHYeDvHkCSEqAvQNLV5Uge.jpg",
+    tmdbId: 27205
+  },
+  {
+    movieId: 23,
+    title: "The Avengers",
+    genres: ["Action", "Adventure", "Sci-Fi"],
+    year: 2012,
+    averageRating: 4.2,
+    ratingCount: 1800,
+    posterUrl: "https://image.tmdb.org/t/p/w500/RYMX2wcKCBAr24UyPD7xwmjaTn.jpg",
+    tmdbId: 24428
+  },
+  {
+    movieId: 24,
+    title: "Interstellar",
+    genres: ["Drama", "Sci-Fi"],
+    year: 2014,
+    averageRating: 4.6,
+    ratingCount: 1900,
+    posterUrl: "https://image.tmdb.org/t/p/w500/gEU2QniE6E77NI6lCU6MxlNBvIx.jpg",
+    tmdbId: 157336
+  },
+  {
+    movieId: 25,
+    title: "The Shawshank Redemption",
+    genres: ["Drama"],
+    year: 1994,
+    averageRating: 4.9,
+    ratingCount: 2800,
+    posterUrl: "https://image.tmdb.org/t/p/w500/q6y0Go1tsGEsmtFryDOJo3dEmqu.jpg",
+    tmdbId: 278
+  },
+  {
+    movieId: 26,
+    title: "Pulp Fiction",
+    genres: ["Crime", "Drama"],
+    year: 1994,
+    averageRating: 4.8,
+    ratingCount: 2600,
+    posterUrl: "https://image.tmdb.org/t/p/w500/d5iIlFn5s0ImszYzBPb8JPIfbXD.jpg",
+    tmdbId: 680
+  },
+  {
+    movieId: 27,
+    title: "The Godfather",
+    genres: ["Crime", "Drama"],
+    year: 1972,
+    averageRating: 4.9,
+    ratingCount: 2900,
+    posterUrl: "https://image.tmdb.org/t/p/w500/3bhkrj58Vtu7enYsRolD1fZdja1.jpg",
+    tmdbId: 238
+  },
+  {
+    movieId: 28,
+    title: "Forrest Gump",
+    genres: ["Drama", "Romance"],
+    year: 1994,
+    averageRating: 4.7,
+    ratingCount: 2400,
+    posterUrl: "https://image.tmdb.org/t/p/w500/arw2vcBveWOVZr6pxd9XTd1TdQa.jpg",
+    tmdbId: 13
+  },
+  {
+    movieId: 29,
+    title: "The Matrix",
+    genres: ["Action", "Sci-Fi"],
+    year: 1999,
+    averageRating: 4.6,
+    ratingCount: 2100,
+    posterUrl: "https://image.tmdb.org/t/p/w500/f89U3ADr1oiB1s9GkdPOEpXUk5H.jpg",
+    tmdbId: 603
+  },
+  {
+    movieId: 30,
+    title: "Titanic",
+    genres: ["Drama", "Romance"],
+    year: 1997,
+    averageRating: 4.3,
+    ratingCount: 2000,
+    posterUrl: "https://image.tmdb.org/t/p/w500/9xjZS2rlVxm8SFx8kPC3aIGCOYQ.jpg",
+    tmdbId: 597
   }
 ];
 
@@ -205,7 +306,7 @@ export function generateMockMovies(count: number = 100): Movie[] {
 
   const additionalMovies: Movie[] = [];
 
-  for (let i = 21; i <= count + 20; i++) {
+  for (let i = 31; i <= count + 30; i++) {
     const randomGenres = genres.sort(() => 0.5 - Math.random()).slice(0, Math.floor(Math.random() * 3) + 1);
     const randomTitle = titles[Math.floor(Math.random() * titles.length)];
     const year = 1990 + Math.floor(Math.random() * 34); // 1990-2024

@@ -31,9 +31,14 @@ export async function GET(request: NextRequest) {
     let cypherQuery = 'MATCH (m:Movie) WHERE 1=1';
     const parameters: any = {};
 
-    // Text search
+    // Enhanced text search - search in title, genres, and overview
     if (query) {
-      cypherQuery += ' AND (toLower(m.title) CONTAINS toLower($query) OR any(g IN m.genres WHERE toLower(g) CONTAINS toLower($query)))';
+      cypherQuery += ` AND (
+        toLower(m.title) CONTAINS toLower($query) OR
+        any(g IN m.genres WHERE toLower(g) CONTAINS toLower($query)) OR
+        (m.overview IS NOT NULL AND toLower(m.overview) CONTAINS toLower($query)) OR
+        any(word IN split(toLower(m.title), ' ') WHERE word STARTS WITH toLower($query))
+      )`;
       parameters.query = query;
     }
 
@@ -99,7 +104,12 @@ export async function GET(request: NextRequest) {
     const countParams: any = {};
 
     if (query) {
-      countQuery += ' AND (toLower(m.title) CONTAINS toLower($query) OR any(g IN m.genres WHERE toLower(g) CONTAINS toLower($query)))';
+      countQuery += ` AND (
+        toLower(m.title) CONTAINS toLower($query) OR
+        any(g IN m.genres WHERE toLower(g) CONTAINS toLower($query)) OR
+        (m.overview IS NOT NULL AND toLower(m.overview) CONTAINS toLower($query)) OR
+        any(word IN split(toLower(m.title), ' ') WHERE word STARTS WITH toLower($query))
+      )`;
       countParams.query = query;
     }
     if (genre) {
@@ -250,65 +260,33 @@ function processVoiceQuery(voiceQuery: string): any {
 }
 
 function getMockSearchResults(query: string, genre: string, page: number, limit: number) {
-  const mockResults = [
-    {
-      movieId: 1,
-      title: "The Matrix",
-      genres: ["Action", "Sci-Fi"],
-      year: 1999,
-      averageRating: 4.7,
-      ratingCount: 1500,
-      posterUrl: "https://image.tmdb.org/t/p/w500/f89U3ADr1oiB1s9GkdPOEpXUk5H.jpg",
-      tmdbId: 603
-    },
-    {
-      movieId: 2,
-      title: "Inception",
-      genres: ["Action", "Sci-Fi", "Thriller"],
-      year: 2010,
-      averageRating: 4.8,
-      ratingCount: 2000,
-      posterUrl: "https://image.tmdb.org/t/p/w500/9gk7adHYeDvHkCSEqAvQNLV5Uge.jpg",
-      tmdbId: 27205
-    },
-    {
-      movieId: 3,
-      title: "Interstellar",
-      genres: ["Drama", "Sci-Fi"],
-      year: 2014,
-      averageRating: 4.6,
-      ratingCount: 1800,
-      posterUrl: "https://image.tmdb.org/t/p/w500/gEU2QniE6E77NI6lCU6MxlNBvIx.jpg",
-      tmdbId: 157336
-    }
-  ];
+  // Import the same mock data used by movies API
+  const { allMockMovies, searchMockMovies, filterMockMovies, paginateMockMovies } = require('@/lib/mock-data');
 
-  // Filter by genre if specified
-  let filteredResults = mockResults;
-  if (genre) {
-    filteredResults = mockResults.filter(movie => 
-      movie.genres.some(g => g.toLowerCase().includes(genre.toLowerCase()))
-    );
-  }
+  let mockResults = allMockMovies;
 
-  // Filter by query if specified
+  // Use the same filtering logic as movies API
   if (query) {
-    filteredResults = filteredResults.filter(movie =>
-      movie.title.toLowerCase().includes(query.toLowerCase()) ||
-      movie.genres.some(g => g.toLowerCase().includes(query.toLowerCase()))
-    );
+    mockResults = searchMockMovies(query, mockResults);
   }
+
+  // Apply genre filter
+  const filters: any = {};
+  if (genre) {
+    filters.genre = genre;
+  }
+
+  if (Object.keys(filters).length > 0) {
+    mockResults = filterMockMovies(mockResults, filters);
+  }
+
+  // Apply pagination
+  const paginatedResult = paginateMockMovies(mockResults, page, limit);
 
   return NextResponse.json({
     success: true,
-    data: filteredResults,
-    pagination: {
-      page,
-      limit,
-      total: filteredResults.length,
-      hasMore: false,
-      totalPages: 1
-    },
+    data: paginatedResult.movies,
+    pagination: paginatedResult.pagination,
     searchParams: { query, genre },
     note: "Using mock data - Neo4j not available"
   });
