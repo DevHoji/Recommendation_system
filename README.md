@@ -1,4 +1,4 @@
-# 🎬 CineAI - AI-Powered Movie Recommendation System
+# 🎬 HojiAI - AI-Powered Movie Recommendation System
 
 A modern, Netflix-style movie recommendation system built with Next.js, featuring AI-powered voice search, personalized recommendations, and a sleek responsive UI.
 
@@ -46,10 +46,10 @@ A modern, Netflix-style movie recommendation system built with Next.js, featurin
    ```
 
    # TMDB API (optional)
-   TMDB_API_KEY=your_tmdb_api_key
+   TMDB_API_KEY=tmdb_api_key
 
    # Google Gemini AI (optional)
-   GEMINI_API_KEY=your_gemini_api_key
+   GEMINI_API_KEY=gemini_api_key
    ```
 
 4. **Start the development server**
@@ -57,7 +57,7 @@ A modern, Netflix-style movie recommendation system built with Next.js, featurin
    npm run dev
    ```
 
-5. **Open your browser**
+5. **Open  browser**
    Navigate to [http://localhost:3000](http://localhost:3000)
 
 ## Database Setup
@@ -66,7 +66,7 @@ The application includes MovieLens dataset and supports  real Neo4j database:
 
 ### Option : Neo4j Database Setup
 1. Create a Neo4j AuraDB instance
-2. Add your credentials to `.env.local`
+2. Add  credentials to `.env.local`
 3. Click "Initialize Database" in the app
 4. The system will import MovieLens data automatically
 
@@ -87,7 +87,7 @@ The application includes MovieLens dataset and supports  real Neo4j database:
 
 ### Watchlist
 - Click the heart icon on any movie card
-- Access your saved movies from the header
+- Access  saved movies from the header
 - Persistent storage across sessions
 
 
